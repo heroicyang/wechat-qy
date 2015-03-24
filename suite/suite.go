@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/url"
+	"time"
 
 	"wechat-qy/base"
 	"wechat-qy/utils"
@@ -30,23 +31,21 @@ var headers = map[string]string{
 
 // Suite 结构体包含了应用套件的相关操作
 type Suite struct {
-	id          string
-	secret      string
-	accessToken string
-	preAuthCode string
-	RedirectURI string
-	msgCrypt    crypto.WechatMsgCrypt
+	id        string
+	secret    string
+	ticket    string
+	msgCrypt  crypto.WechatMsgCrypt
+	tokenInfo *tokenInfo
 }
 
 // New 方法用于创建 Suite 实例
-func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey, redirectURI string) base.RecvHandler {
+func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) base.RecvHandler {
 	msgCrypt, _ := crypto.NewWechatCrypt(suiteToken, suiteEncodingAESKey, suiteID)
 
 	return &Suite{
-		id:          suiteID,
-		secret:      suiteSecret,
-		RedirectURI: redirectURI,
-		msgCrypt:    msgCrypt,
+		id:       suiteID,
+		secret:   suiteSecret,
+		msgCrypt: msgCrypt,
 	}
 }
 
@@ -97,75 +96,131 @@ func (s *Suite) Parse(body []byte, signature, timestamp, nonce string) (interfac
 	return data, nil
 }
 
-// Response 方法用于响应应用套件的消息回调（应用套件无需被动响应)
+// Response 方法用于生成应用套件的被动响应消息
 func (s *Suite) Response(message []byte) ([]byte, error) {
 	return nil, nil
 }
 
-// GetSuiteToken 方法用于获取应用套件令牌
-func (s *Suite) GetSuiteToken(suiteTicket string) error {
+// SetTicket 方法用于设置套件的 ticket 信息
+func (s *Suite) SetTicket(suiteTicket string) {
+	s.ticket = suiteTicket
+}
+
+// Token 方法用于获取当前套件的令牌
+func (s *Suite) Token() (token string, err error) {
+	if s.isValidToken() {
+		token = s.tokenInfo.Token
+		return
+	}
+
+	return s.RefreshToken()
+}
+
+// RefreshToken 方法用于刷新当前套件的令牌
+func (s *Suite) RefreshToken() (string, error) {
+	tokenInfo, err := s.getToken()
+	if err != nil {
+		return "", err
+	}
+
+	s.tokenInfo = tokenInfo
+	return tokenInfo.Token, nil
+}
+
+func (s *Suite) isValidToken() bool {
+	now := time.Now().Unix()
+
+	if now >= s.tokenInfo.ExpiresIn || s.tokenInfo.Token == "" {
+		return false
+	}
+
+	return true
+}
+
+func (s *Suite) getToken() (*tokenInfo, error) {
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":     s.id,
 		"suite_secret": s.secret,
-		"suite_ticket": suiteTicket,
+		"suite_ticket": s.ticket,
 	})
 
 	body, err := utils.SendPostRequest(SuiteTokenURI, buf, headers)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	opResp := &accessToken{}
-	err = json.Unmarshal(body, opResp)
+	tokenInfo := &tokenInfo{}
+	err = json.Unmarshal(body, tokenInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	s.accessToken = opResp.SuiteAccessToken
-	return nil
+	tokenInfo.ExpiresIn = time.Now().Add(time.Second * time.Duration(tokenInfo.ExpiresIn)).Unix()
+
+	return tokenInfo, nil
 }
 
-// GetPreAuthCode 方法用于获取应用套件预授权码
-func (s *Suite) GetPreAuthCode(appID []string) error {
+func (s *Suite) getPreAuthCode(appIDs []int) (*preAuthCodeInfo, error) {
+	token, err := s.Token()
+	if err != nil {
+		return nil, err
+	}
+
 	qs := url.Values{}
-	qs.Add("suite_access_token", s.accessToken)
+	qs.Add("suite_access_token", token)
 	uri := PreAuthCodeURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]interface{}{
 		"suite_id": s.id,
-		"appid":    appID,
+		"appid":    appIDs,
 	})
 
 	body, err := utils.SendPostRequest(uri, buf, headers)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	opResp := &preAuthCode{}
-	err = json.Unmarshal(body, opResp)
-	if err != nil {
-		return err
+	result := &struct {
+		base.Error
+		preAuthCodeInfo
+	}{}
+
+	if err = json.Unmarshal(body, result); err != nil {
+		return nil, err
 	}
 
-	s.preAuthCode = opResp.PreAuthCode
-	return nil
+	if result.ErrCode != base.ErrCodeOk {
+		return nil, &result.Error
+	}
+
+	return &result.preAuthCodeInfo, nil
 }
 
-// GetAuthURI 返回应用套件的授权地址
-func (s *Suite) GetAuthURI(state string) string {
+// GetAuthURI 方法用于获取应用套件的授权地址
+func (s *Suite) GetAuthURI(appIDs []int, redirectURI, state string) (string, error) {
+	preAuthCodeInfo, err := s.getPreAuthCode(appIDs)
+	if err != nil {
+		return "", err
+	}
+
 	qs := url.Values{}
 	qs.Add("suite_id", s.id)
-	qs.Add("pre_auth_code", s.preAuthCode)
-	qs.Add("redirect_uri", s.RedirectURI)
+	qs.Add("pre_auth_code", preAuthCodeInfo.Code)
+	qs.Add("redirect_uri", redirectURI)
 	qs.Add("state", state)
 
-	return AuthURI + "?" + qs.Encode()
+	return AuthURI + "?" + qs.Encode(), nil
 }
 
 // GetPermanentCode 方法用于获取企业的永久授权码
-func (s *Suite) GetPermanentCode(authCode string) (PermanentResponse, error) {
+func (s *Suite) GetPermanentCode(authCode string) (PermanentCodeInfo, error) {
+	token, err := s.Token()
+	if err != nil {
+		return PermanentCodeInfo{}, err
+	}
+
 	qs := url.Values{}
-	qs.Add("suite_access_token", s.accessToken)
+	qs.Add("suite_access_token", token)
 	uri := PermanentCodeURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]interface{}{
@@ -175,19 +230,24 @@ func (s *Suite) GetPermanentCode(authCode string) (PermanentResponse, error) {
 
 	body, err := utils.SendPostRequest(uri, buf, headers)
 	if err != nil {
-		return PermanentResponse{}, err
+		return PermanentCodeInfo{}, err
 	}
 
-	opResp := PermanentResponse{}
-	err = json.Unmarshal(body, &opResp)
+	resp := PermanentCodeInfo{}
+	err = json.Unmarshal(body, &resp)
 
-	return opResp, err
+	return resp, err
 }
 
-// GetAuthInfo 方法用于获取企业号的授权信息
-func (s *Suite) GetAuthInfo(corpID, permanentCode string) (AuthInfoResponse, error) {
+// GetCorpAuthInfo 方法用于获取已授权当前套件的企业号的授权信息
+func (s *Suite) GetCorpAuthInfo(corpID, permanentCode string) (CorpAuthInfo, error) {
+	token, err := s.Token()
+	if err != nil {
+		return CorpAuthInfo{}, err
+	}
+
 	qs := url.Values{}
-	qs.Add("suite_access_token", s.accessToken)
+	qs.Add("suite_access_token", token)
 	uri := AuthInfoURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]string{
@@ -198,19 +258,24 @@ func (s *Suite) GetAuthInfo(corpID, permanentCode string) (AuthInfoResponse, err
 
 	body, err := utils.SendPostRequest(uri, buf, headers)
 	if err != nil {
-		return AuthInfoResponse{}, err
+		return CorpAuthInfo{}, err
 	}
 
-	opResp := AuthInfoResponse{}
-	err = json.Unmarshal(body, &opResp)
+	corpAuthInfo := CorpAuthInfo{}
+	err = json.Unmarshal(body, &corpAuthInfo)
 
-	return opResp, err
+	return corpAuthInfo, err
 }
 
-// GetAgent 方法用于获取授权方的企业号某个应用的基本信息
-func (s *Suite) GetAgent(corpID, permanentCode, agentID string) (AgentResponse, error) {
+// GetCropAgent 方法用于获取已授权当前套件的企业号的某个应用信息
+func (s *Suite) GetCropAgent(corpID, permanentCode, agentID string) (CorpAgent, error) {
+	token, err := s.Token()
+	if err != nil {
+		return CorpAgent{}, err
+	}
+
 	qs := url.Values{}
-	qs.Add("suite_access_token", s.accessToken)
+	qs.Add("suite_access_token", token)
 	uri := GetAgentURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]string{
@@ -222,19 +287,33 @@ func (s *Suite) GetAgent(corpID, permanentCode, agentID string) (AgentResponse, 
 
 	body, err := utils.SendPostRequest(uri, buf, headers)
 	if err != nil {
-		return AgentResponse{}, err
+		return CorpAgent{}, err
 	}
 
-	opResp := AgentResponse{}
-	err = json.Unmarshal(body, &opResp)
+	result := &struct {
+		base.Error
+		CorpAgent
+	}{}
 
-	return opResp, err
+	if err = json.Unmarshal(body, result); err != nil {
+		return CorpAgent{}, err
+	}
+	if result.ErrCode != base.ErrCodeOk {
+		return CorpAgent{}, &result.Error
+	}
+
+	return result.CorpAgent, nil
 }
 
-// SetAgent 方法用于设置企业号应用基本信息
-func (s *Suite) SetAgent(corpID, permanentCode string, agent AgentEditInfo) error {
+// UpdateCorpAgent 方法用于设置已授权当前套件的企业号的某个应用信息
+func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInfo) error {
+	token, err := s.Token()
+	if err != nil {
+		return err
+	}
+
 	qs := url.Values{}
-	qs.Add("suite_access_token", s.accessToken)
+	qs.Add("suite_access_token", token)
 	uri := SetAgentURI + "?" + qs.Encode()
 
 	data := struct {
@@ -249,16 +328,37 @@ func (s *Suite) SetAgent(corpID, permanentCode string, agent AgentEditInfo) erro
 		agent,
 	}
 
-	buf, _ := json.Marshal(data)
-	_, err := utils.SendPostRequest(uri, buf, headers)
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
 
-	return err
+	body, err := utils.SendPostRequest(uri, buf, headers)
+	if err != nil {
+		return err
+	}
+
+	result := &base.Error{}
+	if err := json.Unmarshal(body, result); err != nil {
+		return err
+	}
+
+	if result.ErrCode != base.ErrCodeOk {
+		return result
+	}
+
+	return nil
 }
 
-// GetCorpAccessToken 方法用于获取授权后的企业 access token
-func (s *Suite) GetCorpAccessToken(corpID, permanentCode string) (CorpAccessToken, error) {
+// GetCorpToken 方法用于获取已授权当前套件的企业号的 access token 信息
+func (s *Suite) GetCorpToken(corpID, permanentCode string) (CorpTokenInfo, error) {
+	token, err := s.Token()
+	if err != nil {
+		return CorpTokenInfo{}, err
+	}
+
 	qs := url.Values{}
-	qs.Add("suite_access_token", s.accessToken)
+	qs.Add("suite_access_token", token)
 	uri := CorpTokenURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]string{
@@ -269,11 +369,11 @@ func (s *Suite) GetCorpAccessToken(corpID, permanentCode string) (CorpAccessToke
 
 	body, err := utils.SendPostRequest(uri, buf, headers)
 	if err != nil {
-		return CorpAccessToken{}, err
+		return CorpTokenInfo{}, err
 	}
 
-	opResp := CorpAccessToken{}
-	err = json.Unmarshal(body, &opResp)
+	corpTokenInfo := CorpTokenInfo{}
+	err = json.Unmarshal(body, &corpTokenInfo)
 
-	return opResp, err
+	return corpTokenInfo, err
 }

@@ -1,16 +1,16 @@
 package suite
 
-type accessToken struct {
-	SuiteAccessToken string  `json:"suite_access_token"`
-	ExpiresIn        float64 `json:"expires_in"`
+type tokenInfo struct {
+	Token     string `json:"suite_access_token"`
+	ExpiresIn int64  `json:"expires_in"`
 }
 
-type preAuthCode struct {
-	PreAuthCode string  `json:"pre_auth_code"`
-	ExpiresIn   float64 `json:"expires_in"`
+type preAuthCodeInfo struct {
+	Code      string `json:"pre_auth_code"`
+	ExpiresIn int64  `json:"expires_in"`
 }
 
-// Corporation 为授权方企业信息
+// Corporation 用于表示授权方企业信息
 type Corporation struct {
 	ID            string `json:"corpid"`
 	Name          string `json:"corp_name"`
@@ -22,7 +22,7 @@ type Corporation struct {
 	QRCode        string `json:"corp_wxqrcode"`
 }
 
-// Agent 为授权方应用信息
+// Agent 用于表示应用基本信息
 type Agent struct {
 	ID                   string `json:"agentid"`
 	Name                 string `json:"name"`
@@ -48,16 +48,31 @@ type authorizedDepartment struct {
 	Writable string `json:"writable"`
 }
 
-// AuthInfo 为授权信息
+// AuthInfo 表示授权基本信息
 type AuthInfo struct {
 	Agent      []*authorizedAgent      `json:"agent"`
 	Department []*authorizedDepartment `json:"department"`
 }
 
-// AuthorizedOperator 为执行授权操作的管理员信息
-type AuthorizedOperator struct {
+// PermanentCodeInfo 代表获取企业号永久授权码时的响应信息
+type PermanentCodeInfo struct {
+	AccessToken   string       `json:"access_token"`
+	ExpiresIn     int64        `json:"expires_in"`
+	PermanentCode string       `json:"permanent_code"`
+	AuthCorpInfo  *Corporation `json:"auth_corp_info"`
+	AuthInfo      *AuthInfo    `json:"auth_info"`
+}
+
+type operator struct {
 	Email  string `json:"email"`
 	Mobile string `json:"mobile"`
+}
+
+// CorpAuthInfo 代表企业号的授权信息
+type CorpAuthInfo struct {
+	AuthCorpInfo *Corporation `json:"auth_corp_info"`
+	AuthInfo     *AuthInfo    `json:"auth_info"`
+	AuthUserInfo *operator    `json:"auth_user_info"`
 }
 
 type allowUser struct {
@@ -77,44 +92,28 @@ type allowTags struct {
 	TagID []int64 `json:"tagid"`
 }
 
-// PermanentResponse 用于存储获取永久授权码时的响应结果
-type PermanentResponse struct {
-	AccessToken   string       `json:"access_token"`
-	ExpiresIn     float64      `json:"expires_in"`
-	PermanentCode string       `json:"permanent_code"`
-	AuthCorpInfo  *Corporation `json:"auth_corp_info"`
-	AuthInfo      *AuthInfo    `json:"auth_info"`
-}
-
-// AuthInfoResponse 用于存储获取企业号的授权信息时的响应结果
-type AuthInfoResponse struct {
-	AuthCorpInfo       *Corporation        `json:"auth_corp_info"`
-	AuthInfo           *AuthInfo           `json:"auth_info"`
-	AuthorizedOperator *AuthorizedOperator `json:"auth_user_info"`
-}
-
-// AgentResponse 用于存储获取授权方的企业号某个应用的基本信息
-type AgentResponse struct {
+// CorpAgent 用于表示授权方企业号某个应用的基本信息
+type CorpAgent struct {
 	Agent
-	AllowUsers  []*allowUsers `json:"allow_userinfos"`
-	AllowPartys *allowPartys  `json:"allow_partys"`
-	AllowTags   *allowTags    `json:"allow_tags"`
-	Close       int64         `json:"close"`
+	AllowUsers  *allowUsers  `json:"allow_userinfos"`
+	AllowPartys *allowPartys `json:"allow_partys"`
+	AllowTags   *allowTags   `json:"allow_tags"`
+	Close       int64        `json:"close"`
 }
 
-// AgentEditInfo 为设置应用时的应用信息
+// AgentEditInfo 代表设置授权方企业号某个应用时的应用信息
 type AgentEditInfo struct {
 	Agent
 	LogoMediaID string `json:"logo_mediaid"`
 }
 
-// CorpAccessToken 用于存储获取企业号 access token 的响应结果
-type CorpAccessToken struct {
-	AccessToken string  `json:"access_token"`
-	ExpiresIn   float64 `json:"expires_in"`
+// CorpTokenInfo 用于记录套件中已授权企业号的 access token 信息
+type CorpTokenInfo struct {
+	Token     string `json:"access_token"`
+	ExpiresIn int64  `json:"expires_in"`
 }
 
-// RecvSuiteTicket 用于存储应用套件 ticket 的被动响应结果
+// RecvSuiteTicket 用于记录应用套件 ticket 的被动响应结果
 type RecvSuiteTicket struct {
 	SuiteId     string
 	InfoType    string
@@ -122,7 +121,7 @@ type RecvSuiteTicket struct {
 	SuiteTicket string
 }
 
-// RecvSuiteAuth 用于存储应用套件授权变更、撤销的被动响应结果
+// RecvSuiteAuth 用于记录应用套件授权变更和授权撤销的被动响应结果
 type RecvSuiteAuth struct {
 	SuiteId    string
 	InfoType   string
