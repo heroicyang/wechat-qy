@@ -2,8 +2,12 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"wechat-qy/base"
 )
 
 // SendGetRequest 方法用于发起 GET 请求
@@ -40,6 +44,24 @@ func sendRequest(req *http.Request, headers map[string]string) ([]byte, error) {
 		return nil, err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed, status[%d]", resp.StatusCode)
+	}
+
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	errResp := &base.Error{}
+	if err = json.Unmarshal(body, errResp); err != nil {
+		return nil, err
+	}
+
+	if errResp.ErrCode != base.ErrCodeOk {
+		return nil, errResp
+	}
+
+	return body, nil
 }
