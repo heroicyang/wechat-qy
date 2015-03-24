@@ -2,10 +2,14 @@ package suite
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/url"
 
+	"wechat-qy/base"
 	"wechat-qy/utils"
+
+	"github.com/heroicyang/wechat-crypto"
 )
 
 // 应用套件相关操作的 API 地址
@@ -31,15 +35,71 @@ type Suite struct {
 	accessToken string
 	preAuthCode string
 	RedirectURI string
+	msgCrypt    crypto.WechatMsgCrypt
 }
 
 // New 方法用于创建 Suite 实例
-func New(suiteID, suiteSecret, redirectURI string) *Suite {
+func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey, redirectURI string) base.RecvHandler {
+	msgCrypt, _ := crypto.NewWechatCrypt(suiteToken, suiteEncodingAESKey, suiteID)
+
 	return &Suite{
 		id:          suiteID,
 		secret:      suiteSecret,
 		RedirectURI: redirectURI,
+		msgCrypt:    msgCrypt,
 	}
+}
+
+// Parse 方法用于解析应用套件的消息回调
+func (s *Suite) Parse(body []byte, signature, timestamp, nonce string) (interface{}, error) {
+	var err error
+
+	reqBody := &base.RecvHTTPReqBody{}
+	if err = xml.Unmarshal(body, reqBody); err != nil {
+		return nil, err
+	}
+
+	if signature != s.msgCrypt.GetSignature(timestamp, nonce, reqBody.Encrypt) {
+		return nil, fmt.Errorf("validate signature error")
+	}
+
+	origData, suiteID, err := s.msgCrypt.Decrypt(reqBody.Encrypt)
+	if err != nil {
+		return nil, err
+	}
+
+	if suiteID != s.id {
+		return nil, fmt.Errorf("the request is from suite[%s], not from suite[%s]", suiteID, s.id)
+	}
+
+	probeData := &struct {
+		InfoType string
+	}{}
+
+	if err = xml.Unmarshal(origData, probeData); err != nil {
+		return nil, err
+	}
+
+	var data interface{}
+	switch probeData.InfoType {
+	case "suite_ticket":
+		data = &RecvSuiteTicket{}
+	case "change_auth", "cancel_auth":
+		data = &RecvSuiteAuth{}
+	default:
+		return nil, fmt.Errorf("unknown message type: %s", probeData.InfoType)
+	}
+
+	if err = xml.Unmarshal(origData, data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+// Response 方法用于响应应用套件的消息回调（应用套件无需被动响应)
+func (s *Suite) Response(message []byte) ([]byte, error) {
+	return nil, nil
 }
 
 // GetSuiteToken 方法用于获取应用套件令牌

@@ -122,3 +122,19 @@ type CorpAccessTokenResponse struct {
 	AccessToken string  `json:"access_token"`
 	ExpiresIn   float64 `json:"expires_in"`
 }
+
+// RecvSuiteTicket 用于存储应用套件 ticket 的被动响应结果
+type RecvSuiteTicket struct {
+	SuiteId     string
+	InfoType    string
+	TimeStamp   float64
+	SuiteTicket string
+}
+
+// RecvSuiteAuth 用于存储应用套件授权变更、撤销的被动响应结果
+type RecvSuiteAuth struct {
+	SuiteId    string
+	InfoType   string
+	TimeStamp  float64
+	AuthCorpId string
+}
