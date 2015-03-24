@@ -115,7 +115,7 @@ func (s *Suite) GetSuiteToken(suiteTicket string) error {
 		return err
 	}
 
-	opResp := &suiteTokenResponse{}
+	opResp := &accessToken{}
 	err = json.Unmarshal(body, opResp)
 	if err != nil {
 		return err
@@ -141,14 +141,10 @@ func (s *Suite) GetPreAuthCode(appID []string) error {
 		return err
 	}
 
-	opResp := &preAuthCodeResponse{}
+	opResp := &preAuthCode{}
 	err = json.Unmarshal(body, opResp)
 	if err != nil {
 		return err
-	}
-
-	if opResp.ErrCode != "0" {
-		return fmt.Errorf("获取预授权码失败：%s", opResp.ErrMsg)
 	}
 
 	s.preAuthCode = opResp.PreAuthCode
@@ -254,27 +250,13 @@ func (s *Suite) SetAgent(corpID, permanentCode string, agent AgentEditInfo) erro
 	}
 
 	buf, _ := json.Marshal(data)
+	_, err := utils.SendPostRequest(uri, buf, headers)
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
-	if err != nil {
-		return err
-	}
-
-	opResp := ErrorResponse{}
-	err = json.Unmarshal(body, &opResp)
-	if err != nil {
-		return err
-	}
-
-	if opResp.ErrCode != "0" {
-		return fmt.Errorf("设置企业号应用信息失败：%s", opResp.ErrMsg)
-	}
-
-	return nil
+	return err
 }
 
 // GetCorpAccessToken 方法用于获取授权后的企业 access token
-func (s *Suite) GetCorpAccessToken(corpID, permanentCode string) (CorpAccessTokenResponse, error) {
+func (s *Suite) GetCorpAccessToken(corpID, permanentCode string) (CorpAccessToken, error) {
 	qs := url.Values{}
 	qs.Add("suite_access_token", s.accessToken)
 	uri := CorpTokenURI + "?" + qs.Encode()
@@ -287,10 +269,10 @@ func (s *Suite) GetCorpAccessToken(corpID, permanentCode string) (CorpAccessToke
 
 	body, err := utils.SendPostRequest(uri, buf, headers)
 	if err != nil {
-		return CorpAccessTokenResponse{}, err
+		return CorpAccessToken{}, err
 	}
 
-	opResp := CorpAccessTokenResponse{}
+	opResp := CorpAccessToken{}
 	err = json.Unmarshal(body, &opResp)
 
 	return opResp, err
