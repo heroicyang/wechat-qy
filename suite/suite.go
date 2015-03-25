@@ -117,7 +117,23 @@ func (s *Suite) Parse(body []byte, signature, timestamp, nonce string) (interfac
 
 // Response 方法用于生成应用套件的被动响应消息
 func (s *Suite) Response(message []byte) ([]byte, error) {
-	return nil, nil
+	msgEncrypt, err := s.msgCrypt.Encrypt(string(message))
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := base.GenerateNonce()
+	timestamp := base.GenerateTimestamp()
+	signature := s.msgCrypt.GetSignature(fmt.Sprintf("%d", timestamp), nonce, msgEncrypt)
+
+	resp := &base.RecvHTTPRespBody{
+		Encrypt:      base.StringToCDATA(msgEncrypt),
+		MsgSignature: base.StringToCDATA(signature),
+		TimeStamp:    timestamp,
+		Nonce:        base.StringToCDATA(nonce),
+	}
+
+	return xml.MarshalIndent(resp, " ", "  ")
 }
 
 // SetTicket 方法用于设置套件的 ticket 信息
