@@ -26,12 +26,12 @@ const (
 
 // Suite 结构体包含了应用套件的相关操作
 type Suite struct {
-	id        string
-	secret    string
-	ticket    string
-	msgCrypt  crypto.WechatMsgCrypt
-	tokenInfo *tokenInfo
-	client    *base.Client
+	id       string
+	secret   string
+	ticket   string
+	msgCrypt crypto.WechatMsgCrypt
+	tokener  base.Tokener
+	client   *base.Client
 }
 
 // New 方法用于创建 Suite 实例
@@ -45,6 +45,8 @@ func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) *Suite {
 	}
 
 	suite.client = base.NewClient(suite)
+	suite.tokener = NewTokener(suite)
+
 	return suite
 }
 
@@ -59,7 +61,7 @@ func (s *Suite) Retry(body []byte) (bool, error) {
 	case base.ErrCodeOk:
 		return false, nil
 	case base.ErrCodeTokenInvalid, base.ErrCodeTokenTimeout:
-		if _, err := s.RefreshToken(); err != nil {
+		if _, err := s.tokener.RefreshToken(); err != nil {
 			return false, err
 		}
 		return true, nil
@@ -141,38 +143,7 @@ func (s *Suite) SetTicket(suiteTicket string) {
 	s.ticket = suiteTicket
 }
 
-// Token 方法用于获取当前套件的令牌
-func (s *Suite) Token() (token string, err error) {
-	if s.isValidToken() {
-		token = s.tokenInfo.Token
-		return
-	}
-
-	return s.RefreshToken()
-}
-
-// RefreshToken 方法用于刷新当前套件的令牌
-func (s *Suite) RefreshToken() (string, error) {
-	tokenInfo, err := s.getToken()
-	if err != nil {
-		return "", err
-	}
-
-	s.tokenInfo = tokenInfo
-	return tokenInfo.Token, nil
-}
-
-func (s *Suite) isValidToken() bool {
-	now := time.Now().Unix()
-
-	if now >= s.tokenInfo.ExpiresIn || s.tokenInfo.Token == "" {
-		return false
-	}
-
-	return true
-}
-
-func (s *Suite) getToken() (*tokenInfo, error) {
+func (s *Suite) getToken() (string, error) {
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":     s.id,
 		"suite_secret": s.secret,
@@ -181,22 +152,24 @@ func (s *Suite) getToken() (*tokenInfo, error) {
 
 	body, err := s.client.PostJSON(SuiteTokenURI, buf)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	tokenInfo := &tokenInfo{}
 	err = json.Unmarshal(body, tokenInfo)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	tokenInfo.ExpiresIn = time.Now().Add(time.Second * time.Duration(tokenInfo.ExpiresIn)).Unix()
 
-	return tokenInfo, nil
+	s.tokener.SetTokenInfo(tokenInfo.Token, tokenInfo.ExpiresIn)
+
+	return tokenInfo.Token, nil
 }
 
 func (s *Suite) getPreAuthCode(appIDs []int) (*preAuthCodeInfo, error) {
-	token, err := s.Token()
+	token, err := s.tokener.Token()
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +212,7 @@ func (s *Suite) GetAuthURI(appIDs []int, redirectURI, state string) (string, err
 
 // GetPermanentCode 方法用于获取企业的永久授权码
 func (s *Suite) GetPermanentCode(authCode string) (PermanentCodeInfo, error) {
-	token, err := s.Token()
+	token, err := s.tokener.Token()
 	if err != nil {
 		return PermanentCodeInfo{}, err
 	}
@@ -266,7 +239,7 @@ func (s *Suite) GetPermanentCode(authCode string) (PermanentCodeInfo, error) {
 
 // GetCorpAuthInfo 方法用于获取已授权当前套件的企业号的授权信息
 func (s *Suite) GetCorpAuthInfo(corpID, permanentCode string) (CorpAuthInfo, error) {
-	token, err := s.Token()
+	token, err := s.tokener.Token()
 	if err != nil {
 		return CorpAuthInfo{}, err
 	}
@@ -294,7 +267,7 @@ func (s *Suite) GetCorpAuthInfo(corpID, permanentCode string) (CorpAuthInfo, err
 
 // GetCropAgent 方法用于获取已授权当前套件的企业号的某个应用信息
 func (s *Suite) GetCropAgent(corpID, permanentCode, agentID string) (CorpAgent, error) {
-	token, err := s.Token()
+	token, err := s.tokener.Token()
 	if err != nil {
 		return CorpAgent{}, err
 	}
@@ -323,7 +296,7 @@ func (s *Suite) GetCropAgent(corpID, permanentCode, agentID string) (CorpAgent, 
 
 // UpdateCorpAgent 方法用于设置已授权当前套件的企业号的某个应用信息
 func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInfo) error {
-	token, err := s.Token()
+	token, err := s.tokener.Token()
 	if err != nil {
 		return err
 	}
@@ -355,7 +328,7 @@ func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInf
 
 // GetCorpToken 方法用于获取已授权当前套件的企业号的 access token 信息
 func (s *Suite) GetCorpToken(corpID, permanentCode string) (CorpTokenInfo, error) {
-	token, err := s.Token()
+	token, err := s.tokener.Token()
 	if err != nil {
 		return CorpTokenInfo{}, err
 	}

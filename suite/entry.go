@@ -1,10 +1,5 @@
 package suite
 
-type tokenInfo struct {
-	Token     string `json:"suite_access_token"`
-	ExpiresIn int64  `json:"expires_in"`
-}
-
 type preAuthCodeInfo struct {
 	Code      string `json:"pre_auth_code"`
 	ExpiresIn int64  `json:"expires_in"`
