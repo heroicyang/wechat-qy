@@ -3,7 +3,7 @@ package suite
 import (
 	"time"
 
-	"wechat-qy/base"
+	"github.com/heroicyang/wechat-qy/base"
 )
 
 type tokenInfo struct {

@@ -3,30 +3,27 @@ package suite
 import (
 	"time"
 
-	"wechat-qy/api"
-	"wechat-qy/base"
-
-	"github.com/heroicyang/wechat-crypto"
+	"github.com/heroicyang/wechat-qy/api"
+	"github.com/heroicyang/wechat-qy/base"
 )
 
-// API 基于套件的接口调用
+// API 封装基于套件的接口调用
 type API struct {
-	api.API
+	*api.API
 	permanentCode string
 	suite         *Suite
 }
 
-// NewAPI 方法创建基于该套件的 API 实例
+// NewAPI 方法用于创建基于该套件的 API 实例
 func (s *Suite) NewAPI(corpID, permanentCode string) *API {
-	msgCrypt, _ := crypto.NewWechatCrypt(s.token, s.encodingAESKey, corpID)
+	baseAPI := api.New(corpID, "", s.token, s.encodingAESKey)
 
 	suiteAPI := &API{
-		permanentCode: permanentCode,
-		suite:         s,
+		baseAPI,
+		permanentCode,
+		s,
 	}
 
-	suiteAPI.CorpID = corpID
-	suiteAPI.MsgCrypt = msgCrypt
 	suiteAPI.Client = base.NewClient(suiteAPI)
 	suiteAPI.Tokener = api.NewTokener(suiteAPI)
 

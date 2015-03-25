@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"wechat-qy/base"
+	"github.com/heroicyang/wechat-qy/base"
 )
 
 // TokenInfo 企业号 API 的令牌信息

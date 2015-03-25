@@ -2,16 +2,20 @@ package api
 
 import (
 	"encoding/json"
-	"wechat-qy/base"
 
 	"github.com/heroicyang/wechat-crypto"
+	"github.com/heroicyang/wechat-qy/base"
 )
 
 // 企业号相关接口的 API 接口地址
 const (
-	CreateMenuURI = "https://qyapi.weixin.qq.com/cgi-bin/menu/create"
-	DeleteMenuURI = "https://qyapi.weixin.qq.com/cgi-bin/menu/delete"
-	GetMenuURI    = "https://qyapi.weixin.qq.com/cgi-bin/menu/get"
+	CreateMenuURI       = "https://qyapi.weixin.qq.com/cgi-bin/menu/create"
+	DeleteMenuURI       = "https://qyapi.weixin.qq.com/cgi-bin/menu/delete"
+	GetMenuURI          = "https://qyapi.weixin.qq.com/cgi-bin/menu/get"
+	CreateDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/create"
+	UpdateDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/update"
+	DeleteDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/delete"
+	ListDepartmentURI   = "https://qyapi.weixin.qq.com/cgi-bin/department/list"
 )
 
 // API 封装了企业号相关的接口操作
@@ -28,8 +32,8 @@ func New(corpID, corpSecret, token, encodingAESKey string) *API {
 	msgCrypt, _ := crypto.NewWechatCrypt(token, encodingAESKey, corpID)
 
 	api := &API{
-		CorpID:     corpID,
 		corpSecret: corpSecret,
+		CorpID:     corpID,
 		MsgCrypt:   msgCrypt,
 	}
 

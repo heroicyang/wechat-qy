@@ -7,9 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"wechat-qy/base"
-
 	"github.com/heroicyang/wechat-crypto"
+	"github.com/heroicyang/wechat-qy/base"
 )
 
 // 应用套件相关操作的 API 地址
