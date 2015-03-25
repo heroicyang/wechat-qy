@@ -34,7 +34,7 @@ type Menu struct {
 
 // CreateMenu 方法用于创建某个应用的菜单
 func (a *API) CreateMenu(agentID int64, menu Menu) error {
-	token, err := a.Token()
+	token, err := a.tokener.Token()
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (a *API) CreateMenu(agentID int64, menu Menu) error {
 
 // DeleteMenu 方法用于删除某个应用的菜单
 func (a *API) DeleteMenu(agentID int64) error {
-	token, err := a.Token()
+	token, err := a.tokener.Token()
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (a *API) DeleteMenu(agentID int64) error {
 func (a *API) GetMenu(agentID int64) (Menu, error) {
 	var menu Menu
 
-	token, err := a.Token()
+	token, err := a.tokener.Token()
 	if err != nil {
 		return menu, err
 	}

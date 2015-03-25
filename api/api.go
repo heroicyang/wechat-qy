@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"time"
 	"wechat-qy/base"
 
 	"github.com/heroicyang/wechat-crypto"
@@ -15,19 +14,13 @@ const (
 	GetMenuURI    = "https://qyapi.weixin.qq.com/cgi-bin/menu/get"
 )
 
-// TokenInfo 企业号 API 的令牌信息
-type TokenInfo struct {
-	Token     string `json:"access_token"`
-	ExpiresIn int64  `json:"expires_in"`
-}
-
 // API 封装了企业号相关的接口操作
 type API struct {
 	corpID     string
 	corpSecret string
 	msgCrypt   crypto.WechatMsgCrypt
 	client     *base.Client
-	tokenInfo  *TokenInfo
+	tokener    base.Tokener
 }
 
 // New 方法创建 API 实例
@@ -40,8 +33,8 @@ func New(corpID, corpSecret, token, encodingAESKey string) *API {
 		msgCrypt:   msgCrypt,
 	}
 
-	client := base.NewClient(api)
-	api.client = client
+	api.client = base.NewClient(api)
+	api.tokener = NewTokener(api)
 
 	return api
 }
@@ -57,7 +50,7 @@ func (a *API) Retry(body []byte) (bool, error) {
 	case base.ErrCodeOk:
 		return false, nil
 	case base.ErrCodeTokenInvalid, base.ErrCodeTokenTimeout:
-		if _, err := a.RefreshToken(); err != nil {
+		if _, err := a.tokener.RefreshToken(); err != nil {
 			return false, err
 		}
 		return true, nil
@@ -66,37 +59,6 @@ func (a *API) Retry(body []byte) (bool, error) {
 	}
 }
 
-// Token 方法用于获取企业号的令牌
-func (a *API) Token() (token string, err error) {
-	if a.isValidToken() {
-		token = a.tokenInfo.Token
-		return
-	}
-
-	return a.RefreshToken()
-}
-
-// RefreshToken 方法用于刷新当前企业号的令牌
-func (a *API) RefreshToken() (string, error) {
-	tokenInfo, err := a.getToken()
-	if err != nil {
-		return "", err
-	}
-
-	a.tokenInfo = tokenInfo
-	return tokenInfo.Token, nil
-}
-
-func (a *API) isValidToken() bool {
-	now := time.Now().Unix()
-
-	if now >= a.tokenInfo.ExpiresIn || a.tokenInfo.Token == "" {
-		return false
-	}
-
-	return true
-}
-
-func (a *API) getToken() (*TokenInfo, error) {
-	return nil, nil
+func (a *API) getToken() (string, error) {
+	return "", nil
 }
