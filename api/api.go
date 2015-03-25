@@ -16,11 +16,11 @@ const (
 
 // API 封装了企业号相关的接口操作
 type API struct {
-	corpID     string
 	corpSecret string
-	msgCrypt   crypto.WechatMsgCrypt
-	client     *base.Client
-	tokener    base.Tokener
+	CorpID     string
+	MsgCrypt   crypto.WechatMsgCrypt
+	Client     *base.Client
+	Tokener    base.Tokener
 }
 
 // New 方法创建 API 实例
@@ -28,13 +28,13 @@ func New(corpID, corpSecret, token, encodingAESKey string) *API {
 	msgCrypt, _ := crypto.NewWechatCrypt(token, encodingAESKey, corpID)
 
 	api := &API{
-		corpID:     corpID,
+		CorpID:     corpID,
 		corpSecret: corpSecret,
-		msgCrypt:   msgCrypt,
+		MsgCrypt:   msgCrypt,
 	}
 
-	api.client = base.NewClient(api)
-	api.tokener = NewTokener(api)
+	api.Client = base.NewClient(api)
+	api.Tokener = NewTokener(api)
 
 	return api
 }
@@ -50,7 +50,7 @@ func (a *API) Retry(body []byte) (bool, error) {
 	case base.ErrCodeOk:
 		return false, nil
 	case base.ErrCodeTokenInvalid, base.ErrCodeTokenTimeout:
-		if _, err := a.tokener.RefreshToken(); err != nil {
+		if _, err := a.Tokener.RefreshToken(); err != nil {
 			return false, err
 		}
 		return true, nil
@@ -59,6 +59,6 @@ func (a *API) Retry(body []byte) (bool, error) {
 	}
 }
 
-func (a *API) getToken() (string, error) {
-	return "", nil
+func (a *API) GetToken() (token string, expiresIn int64, err error) {
+	return "", 0, nil
 }

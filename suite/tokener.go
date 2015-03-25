@@ -2,6 +2,8 @@ package suite
 
 import (
 	"time"
+
+	"wechat-qy/base"
 )
 
 type tokenInfo struct {
@@ -11,13 +13,13 @@ type tokenInfo struct {
 
 // Tokener 应用套件令牌
 type Tokener struct {
-	tokenInfo *tokenInfo
-	suite     *Suite
+	tokenInfo    *tokenInfo
+	tokenFetcher base.TokenFetcher
 }
 
 // NewTokener 方法用于创建 Tokener 实例
-func NewTokener(suite *Suite) *Tokener {
-	return &Tokener{suite: suite}
+func NewTokener(tokenFetcher base.TokenFetcher) *Tokener {
+	return &Tokener{tokenFetcher: tokenFetcher}
 }
 
 // Token 方法用于获取应用套件令牌
@@ -32,12 +34,15 @@ func (t *Tokener) Token() (token string, err error) {
 
 // RefreshToken 方法用于刷新应用套件令牌信息
 func (t *Tokener) RefreshToken() (token string, err error) {
-	return t.suite.getToken()
-}
+	var expiresIn int64
 
-// SetTokenInfo 方法用于设置应用套件令牌的信息
-func (t *Tokener) SetTokenInfo(token string, expiresIn int64) {
+	token, expiresIn, err = t.tokenFetcher.GetToken()
+	if err != nil {
+		return
+	}
+
 	t.tokenInfo = &tokenInfo{token, expiresIn}
+	return
 }
 
 func (t *Tokener) isValidToken() bool {

@@ -34,7 +34,7 @@ type Menu struct {
 
 // CreateMenu 方法用于创建某个应用的菜单
 func (a *API) CreateMenu(agentID int64, menu Menu) error {
-	token, err := a.tokener.Token()
+	token, err := a.Tokener.Token()
 	if err != nil {
 		return err
 	}
@@ -49,14 +49,14 @@ func (a *API) CreateMenu(agentID int64, menu Menu) error {
 		return err
 	}
 
-	_, err = a.client.PostJSON(url, data)
+	_, err = a.Client.PostJSON(url, data)
 
 	return err
 }
 
 // DeleteMenu 方法用于删除某个应用的菜单
 func (a *API) DeleteMenu(agentID int64) error {
-	token, err := a.tokener.Token()
+	token, err := a.Tokener.Token()
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (a *API) DeleteMenu(agentID int64) error {
 
 	url := DeleteMenuURI + "?" + qs.Encode()
 
-	_, err = a.client.GetJSON(url)
+	_, err = a.Client.GetJSON(url)
 
 	return err
 }
@@ -76,7 +76,7 @@ func (a *API) DeleteMenu(agentID int64) error {
 func (a *API) GetMenu(agentID int64) (Menu, error) {
 	var menu Menu
 
-	token, err := a.tokener.Token()
+	token, err := a.Tokener.Token()
 	if err != nil {
 		return menu, err
 	}
@@ -87,7 +87,7 @@ func (a *API) GetMenu(agentID int64) (Menu, error) {
 
 	url := GetMenuURI + "?" + qs.Encode()
 
-	body, err := a.client.GetJSON(url)
+	body, err := a.Client.GetJSON(url)
 	if err != nil {
 		return menu, err
 	}

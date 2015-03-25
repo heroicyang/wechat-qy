@@ -26,12 +26,14 @@ const (
 
 // Suite 结构体包含了应用套件的相关操作
 type Suite struct {
-	id       string
-	secret   string
-	ticket   string
-	msgCrypt crypto.WechatMsgCrypt
-	tokener  base.Tokener
-	client   *base.Client
+	id             string
+	secret         string
+	ticket         string
+	token          string
+	encodingAESKey string
+	msgCrypt       crypto.WechatMsgCrypt
+	tokener        base.Tokener
+	client         *base.Client
 }
 
 // New 方法用于创建 Suite 实例
@@ -39,9 +41,11 @@ func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) *Suite {
 	msgCrypt, _ := crypto.NewWechatCrypt(suiteToken, suiteEncodingAESKey, suiteID)
 
 	suite := &Suite{
-		id:       suiteID,
-		secret:   suiteSecret,
-		msgCrypt: msgCrypt,
+		id:             suiteID,
+		secret:         suiteSecret,
+		token:          suiteToken,
+		encodingAESKey: suiteEncodingAESKey,
+		msgCrypt:       msgCrypt,
 	}
 
 	suite.client = base.NewClient(suite)
@@ -143,7 +147,8 @@ func (s *Suite) SetTicket(suiteTicket string) {
 	s.ticket = suiteTicket
 }
 
-func (s *Suite) getToken() (string, error) {
+// GetToken 方法用于向 API 服务器获取套件的令牌信息
+func (s *Suite) GetToken() (token string, expiresIn int64, err error) {
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":     s.id,
 		"suite_secret": s.secret,
@@ -152,20 +157,19 @@ func (s *Suite) getToken() (string, error) {
 
 	body, err := s.client.PostJSON(SuiteTokenURI, buf)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	tokenInfo := &tokenInfo{}
 	err = json.Unmarshal(body, tokenInfo)
 	if err != nil {
-		return "", err
+		return
 	}
 
-	tokenInfo.ExpiresIn = time.Now().Add(time.Second * time.Duration(tokenInfo.ExpiresIn)).Unix()
+	token = tokenInfo.Token
+	expiresIn = time.Now().Add(time.Second * time.Duration(tokenInfo.ExpiresIn)).Unix()
 
-	s.tokener.SetTokenInfo(tokenInfo.Token, tokenInfo.ExpiresIn)
-
-	return tokenInfo.Token, nil
+	return
 }
 
 func (s *Suite) getPreAuthCode(appIDs []int) (*preAuthCodeInfo, error) {
@@ -326,11 +330,10 @@ func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInf
 	return err
 }
 
-// GetCorpToken 方法用于获取已授权当前套件的企业号的 access token 信息
-func (s *Suite) GetCorpToken(corpID, permanentCode string) (CorpTokenInfo, error) {
+func (s *Suite) getCorpToken(corpID, permanentCode string) (*CorpTokenInfo, error) {
 	token, err := s.tokener.Token()
 	if err != nil {
-		return CorpTokenInfo{}, err
+		return nil, err
 	}
 
 	qs := url.Values{}
@@ -345,10 +348,10 @@ func (s *Suite) GetCorpToken(corpID, permanentCode string) (CorpTokenInfo, error
 
 	body, err := s.client.PostJSON(uri, buf)
 	if err != nil {
-		return CorpTokenInfo{}, err
+		return nil, err
 	}
 
-	result := CorpTokenInfo{}
+	result := &CorpTokenInfo{}
 	err = json.Unmarshal(body, &result)
 
 	return result, err
