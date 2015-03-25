@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"wechat-qy/base"
-	"wechat-qy/utils"
 
 	"github.com/heroicyang/wechat-crypto"
 )
@@ -25,10 +24,6 @@ const (
 	CorpTokenURI     = "https://qyapi.weixin.qq.com/cgi-bin/service/get_corp_token"
 )
 
-var headers = map[string]string{
-	"Content-Type": "application/json",
-}
-
 // Suite 结构体包含了应用套件的相关操作
 type Suite struct {
 	id        string
@@ -36,16 +31,40 @@ type Suite struct {
 	ticket    string
 	msgCrypt  crypto.WechatMsgCrypt
 	tokenInfo *tokenInfo
+	client    *base.Client
 }
 
 // New 方法用于创建 Suite 实例
-func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) base.RecvHandler {
+func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) *Suite {
 	msgCrypt, _ := crypto.NewWechatCrypt(suiteToken, suiteEncodingAESKey, suiteID)
 
-	return &Suite{
+	suite := &Suite{
 		id:       suiteID,
 		secret:   suiteSecret,
 		msgCrypt: msgCrypt,
+	}
+
+	suite.client = base.NewClient(suite)
+	return suite
+}
+
+// Retry 方法实现了套件在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
+func (s *Suite) Retry(body []byte) (bool, error) {
+	result := &base.Error{}
+	if err := json.Unmarshal(body, result); err != nil {
+		return false, err
+	}
+
+	switch result.ErrCode {
+	case base.ErrCodeOk:
+		return false, nil
+	case base.ErrCodeTokenInvalid, base.ErrCodeTokenTimeout:
+		if _, err := s.RefreshToken(); err != nil {
+			return false, err
+		}
+		return true, nil
+	default:
+		return false, result
 	}
 }
 
@@ -144,7 +163,7 @@ func (s *Suite) getToken() (*tokenInfo, error) {
 		"suite_ticket": s.ticket,
 	})
 
-	body, err := utils.SendPostRequest(SuiteTokenURI, buf, headers)
+	body, err := s.client.PostJSON(SuiteTokenURI, buf)
 	if err != nil {
 		return nil, err
 	}
@@ -175,25 +194,15 @@ func (s *Suite) getPreAuthCode(appIDs []int) (*preAuthCodeInfo, error) {
 		"appid":    appIDs,
 	})
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
+	body, err := s.client.PostJSON(uri, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &struct {
-		base.Error
-		preAuthCodeInfo
-	}{}
+	result := &preAuthCodeInfo{}
+	err = json.Unmarshal(body, result)
 
-	if err = json.Unmarshal(body, result); err != nil {
-		return nil, err
-	}
-
-	if result.ErrCode != base.ErrCodeOk {
-		return nil, &result.Error
-	}
-
-	return &result.preAuthCodeInfo, nil
+	return result, err
 }
 
 // GetAuthURI 方法用于获取应用套件的授权地址
@@ -228,15 +237,15 @@ func (s *Suite) GetPermanentCode(authCode string) (PermanentCodeInfo, error) {
 		"auth_code": authCode,
 	})
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
+	body, err := s.client.PostJSON(uri, buf)
 	if err != nil {
 		return PermanentCodeInfo{}, err
 	}
 
-	resp := PermanentCodeInfo{}
-	err = json.Unmarshal(body, &resp)
+	result := PermanentCodeInfo{}
+	err = json.Unmarshal(body, &result)
 
-	return resp, err
+	return result, err
 }
 
 // GetCorpAuthInfo 方法用于获取已授权当前套件的企业号的授权信息
@@ -256,15 +265,15 @@ func (s *Suite) GetCorpAuthInfo(corpID, permanentCode string) (CorpAuthInfo, err
 		"permanent_code": permanentCode,
 	})
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
+	body, err := s.client.PostJSON(uri, buf)
 	if err != nil {
 		return CorpAuthInfo{}, err
 	}
 
-	corpAuthInfo := CorpAuthInfo{}
-	err = json.Unmarshal(body, &corpAuthInfo)
+	result := CorpAuthInfo{}
+	err = json.Unmarshal(body, &result)
 
-	return corpAuthInfo, err
+	return result, err
 }
 
 // GetCropAgent 方法用于获取已授权当前套件的企业号的某个应用信息
@@ -285,24 +294,15 @@ func (s *Suite) GetCropAgent(corpID, permanentCode, agentID string) (CorpAgent, 
 		"agentid":        agentID,
 	})
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
+	body, err := s.client.PostJSON(uri, buf)
 	if err != nil {
 		return CorpAgent{}, err
 	}
 
-	result := &struct {
-		base.Error
-		CorpAgent
-	}{}
+	result := CorpAgent{}
+	err = json.Unmarshal(body, &result)
 
-	if err = json.Unmarshal(body, result); err != nil {
-		return CorpAgent{}, err
-	}
-	if result.ErrCode != base.ErrCodeOk {
-		return CorpAgent{}, &result.Error
-	}
-
-	return result.CorpAgent, nil
+	return result, err
 }
 
 // UpdateCorpAgent 方法用于设置已授权当前套件的企业号的某个应用信息
@@ -333,21 +333,8 @@ func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInf
 		return err
 	}
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
-	if err != nil {
-		return err
-	}
-
-	result := &base.Error{}
-	if err := json.Unmarshal(body, result); err != nil {
-		return err
-	}
-
-	if result.ErrCode != base.ErrCodeOk {
-		return result
-	}
-
-	return nil
+	_, err = s.client.PostJSON(uri, buf)
+	return err
 }
 
 // GetCorpToken 方法用于获取已授权当前套件的企业号的 access token 信息
@@ -367,13 +354,13 @@ func (s *Suite) GetCorpToken(corpID, permanentCode string) (CorpTokenInfo, error
 		"permanent_code": permanentCode,
 	})
 
-	body, err := utils.SendPostRequest(uri, buf, headers)
+	body, err := s.client.PostJSON(uri, buf)
 	if err != nil {
 		return CorpTokenInfo{}, err
 	}
 
-	corpTokenInfo := CorpTokenInfo{}
-	err = json.Unmarshal(body, &corpTokenInfo)
+	result := CorpTokenInfo{}
+	err = json.Unmarshal(body, &result)
 
-	return corpTokenInfo, err
+	return result, err
 }
