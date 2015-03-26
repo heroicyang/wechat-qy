@@ -20,7 +20,7 @@ const (
 
 // MenuButton 中最多包含 5 个子菜单（二级菜单）
 type MenuButton struct {
-	Type       string       `json:"type,omitempty"`
+	Type       string       `json:"type"`
 	Name       string       `json:"name"`
 	Key        string       `json:"key,omitempty"`
 	URL        string       `json:"url,omitempty"`
@@ -29,7 +29,7 @@ type MenuButton struct {
 
 // Menu 中最多包含 3 个菜单按钮（一级菜单）
 type Menu struct {
-	Buttons []MenuButton `json:"button,omitempty"`
+	Buttons []MenuButton `json:"button"`
 }
 
 // CreateMenu 方法用于创建某个应用的菜单

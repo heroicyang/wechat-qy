@@ -37,10 +37,12 @@ func (t *Tokener) Token() (token string, err error) {
 func (t *Tokener) RefreshToken() (token string, err error) {
 	var expiresIn int64
 
-	token, expiresIn, err = t.tokenFetcher.GetToken()
+	token, expiresIn, err = t.tokenFetcher.FetchToken()
 	if err != nil {
 		return
 	}
+
+	expiresIn = time.Now().Add(time.Second * time.Duration(expiresIn)).Unix()
 
 	t.tokenInfo = &TokenInfo{token, expiresIn}
 

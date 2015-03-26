@@ -8,10 +8,10 @@ import (
 
 // Department 表示部门信息
 type Department struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	Order    int64  `json:"order"`
-	ParentID int64  `json:"parentid"`
+	ID       int64  `json:"id,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Order    int64  `json:"order,omitempty"`
+	ParentID int64  `json:"parentid,omitempty"`
 }
 
 // CreateDepartment 方法用于创建部门

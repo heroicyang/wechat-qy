@@ -5,6 +5,11 @@ type preAuthCodeInfo struct {
 	ExpiresIn int64  `json:"expires_in"`
 }
 
+type corpTokenInfo struct {
+	Token     string `json:"access_token"`
+	ExpiresIn int64  `json:"expires_in"`
+}
+
 // Corporation 用于表示授权方企业信息
 type Corporation struct {
 	ID            string `json:"corpid"`
@@ -100,12 +105,6 @@ type CorpAgent struct {
 type AgentEditInfo struct {
 	Agent
 	LogoMediaID string `json:"logo_mediaid"`
-}
-
-// CorpTokenInfo 用于记录套件中已授权企业号的 access token 信息
-type CorpTokenInfo struct {
-	Token     string `json:"access_token"`
-	ExpiresIn int64  `json:"expires_in"`
 }
 
 // RecvSuiteTicket 用于记录应用套件 ticket 的被动响应结果

@@ -9,7 +9,7 @@ import (
 
 // Retrier 是带有重试机制 api 需要实现的接口
 type Retrier interface {
-	Retry(body []byte) (bool, error)
+	Retriable(body []byte) (bool, error)
 }
 
 // Client 封装了公共的请求方法
@@ -71,7 +71,7 @@ RETRY:
 	switch c.api.(type) {
 	case Retrier:
 		api := c.api.(Retrier)
-		retriable, err = api.Retry(body)
+		retriable, err = api.Retriable(body)
 		if err != nil {
 			return nil, err
 		}

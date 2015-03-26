@@ -2,7 +2,7 @@ package base
 
 // TokenFetcher 包含向 API 服务器获取令牌信息的操作
 type TokenFetcher interface {
-	GetToken() (token string, expiresIn int64, err error)
+	FetchToken() (token string, expiresIn int64, err error)
 }
 
 // Tokener 包含了令牌获取和刷新的操作

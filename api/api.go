@@ -16,6 +16,11 @@ const (
 	UpdateDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/update"
 	DeleteDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/delete"
 	ListDepartmentURI   = "https://qyapi.weixin.qq.com/cgi-bin/department/list"
+	CreateUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/create"
+	UpdateUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/update"
+	DeleteUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/delete"
+	BatchDeleteUserURI  = "https://qyapi.weixin.qq.com/cgi-bin/user/batchdelete"
+	GetUserURI          = "https://qyapi.weixin.qq.com/cgi-bin/user/get"
 )
 
 // API 封装了企业号相关的接口操作
@@ -43,8 +48,8 @@ func New(corpID, corpSecret, token, encodingAESKey string) *API {
 	return api
 }
 
-// Retry 方法实现了 API 在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
-func (a *API) Retry(body []byte) (bool, error) {
+// Retriable 方法实现了 API 在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
+func (a *API) Retriable(body []byte) (bool, error) {
 	result := &base.Error{}
 	if err := json.Unmarshal(body, result); err != nil {
 		return false, err
@@ -63,6 +68,6 @@ func (a *API) Retry(body []byte) (bool, error) {
 	}
 }
 
-func (a *API) GetToken() (token string, expiresIn int64, err error) {
+func (a *API) FetchToken() (token string, expiresIn int64, err error) {
 	return "", 0, nil
 }

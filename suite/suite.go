@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/heroicyang/wechat-crypto"
 	"github.com/heroicyang/wechat-qy/base"
@@ -53,8 +52,8 @@ func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) *Suite {
 	return suite
 }
 
-// Retry 方法实现了套件在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
-func (s *Suite) Retry(body []byte) (bool, error) {
+// Retriable 方法实现了套件在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
+func (s *Suite) Retriable(body []byte) (bool, error) {
 	result := &base.Error{}
 	if err := json.Unmarshal(body, result); err != nil {
 		return false, err
@@ -146,8 +145,8 @@ func (s *Suite) SetTicket(suiteTicket string) {
 	s.ticket = suiteTicket
 }
 
-// GetToken 方法用于向 API 服务器获取套件的令牌信息
-func (s *Suite) GetToken() (token string, expiresIn int64, err error) {
+// FetchToken 方法用于向 API 服务器获取套件的令牌信息
+func (s *Suite) FetchToken() (token string, expiresIn int64, err error) {
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":     s.id,
 		"suite_secret": s.secret,
@@ -166,7 +165,7 @@ func (s *Suite) GetToken() (token string, expiresIn int64, err error) {
 	}
 
 	token = tokenInfo.Token
-	expiresIn = time.Now().Add(time.Second * time.Duration(tokenInfo.ExpiresIn)).Unix()
+	expiresIn = tokenInfo.ExpiresIn
 
 	return
 }
@@ -329,7 +328,7 @@ func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInf
 	return err
 }
 
-func (s *Suite) getCorpToken(corpID, permanentCode string) (*CorpTokenInfo, error) {
+func (s *Suite) fetchCorpToken(corpID, permanentCode string) (*corpTokenInfo, error) {
 	token, err := s.tokener.Token()
 	if err != nil {
 		return nil, err
@@ -350,7 +349,7 @@ func (s *Suite) getCorpToken(corpID, permanentCode string) (*CorpTokenInfo, erro
 		return nil, err
 	}
 
-	result := &CorpTokenInfo{}
+	result := &corpTokenInfo{}
 	err = json.Unmarshal(body, &result)
 
 	return result, err
