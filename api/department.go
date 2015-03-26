@@ -6,6 +6,13 @@ import (
 	"strconv"
 )
 
+const (
+	createDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/create"
+	updateDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/update"
+	deleteDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/delete"
+	listDepartmentURI   = "https://qyapi.weixin.qq.com/cgi-bin/department/list"
+)
+
 // Department 表示部门信息
 type Department struct {
 	ID       int64  `json:"id,omitempty"`
@@ -24,7 +31,7 @@ func (a *API) CreateDepartment(department *Department) error {
 	qs := make(url.Values)
 	qs.Add("access_token", token)
 
-	url := CreateDepartmentURI + "?" + qs.Encode()
+	url := createDepartmentURI + "?" + qs.Encode()
 	data, err := json.Marshal(department)
 	if err != nil {
 		return err
@@ -54,7 +61,7 @@ func (a *API) UpdateDepartment(department *Department) error {
 	qs := make(url.Values)
 	qs.Add("access_token", token)
 
-	url := UpdateDepartmentURI + "?" + qs.Encode()
+	url := updateDepartmentURI + "?" + qs.Encode()
 	data, err := json.Marshal(department)
 	if err != nil {
 		return err
@@ -75,7 +82,7 @@ func (a *API) DeleteDepartment(id int64) error {
 	qs.Add("access_token", token)
 	qs.Add("id", strconv.FormatInt(id, 10))
 
-	url := DeleteDepartmentURI + "?" + qs.Encode()
+	url := deleteDepartmentURI + "?" + qs.Encode()
 
 	_, err = a.Client.GetJSON(url)
 	return err
@@ -92,7 +99,7 @@ func (a *API) ListDepartment(id int64) ([]*Department, error) {
 	qs.Add("access_token", token)
 	qs.Add("id", strconv.FormatInt(id, 10))
 
-	url := ListDepartmentURI + "?" + qs.Encode()
+	url := listDepartmentURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {

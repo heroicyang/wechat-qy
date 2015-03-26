@@ -6,6 +6,17 @@ import (
 	"strconv"
 )
 
+const (
+	createUserURI      = "https://qyapi.weixin.qq.com/cgi-bin/user/create"
+	updateUserURI      = "https://qyapi.weixin.qq.com/cgi-bin/user/update"
+	deleteUserURI      = "https://qyapi.weixin.qq.com/cgi-bin/user/delete"
+	batchDeleteUserURI = "https://qyapi.weixin.qq.com/cgi-bin/user/batchdelete"
+	getUserURI         = "https://qyapi.weixin.qq.com/cgi-bin/user/get"
+	listSimpleUserURI  = "https://qyapi.weixin.qq.com/cgi-bin/user/simplelist"
+	listUserURI        = "https://qyapi.weixin.qq.com/cgi-bin/user/list"
+	inviteUserURI      = "https://qyapi.weixin.qq.com/cgi-bin/invite/send"
+)
+
 // UserAttribute struct 为用户扩展信息
 type UserAttribute struct {
 	Name  string `json:"name"`
@@ -39,7 +50,7 @@ func (a *API) CreateUser(user *User) error {
 	qs := make(url.Values)
 	qs.Add("access_token", token)
 
-	url := CreateUserURI + "?" + qs.Encode()
+	url := createUserURI + "?" + qs.Encode()
 	data, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -59,7 +70,7 @@ func (a *API) UpdateUser(user *User) error {
 	qs := make(url.Values)
 	qs.Add("access_token", token)
 
-	url := UpdateUserURI + "?" + qs.Encode()
+	url := updateUserURI + "?" + qs.Encode()
 	data, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -80,7 +91,7 @@ func (a *API) DeleteUser(userID string) error {
 	qs.Add("access_token", token)
 	qs.Add("userid", userID)
 
-	url := DeleteUserURI + "?" + qs.Encode()
+	url := deleteUserURI + "?" + qs.Encode()
 
 	_, err = a.Client.GetJSON(url)
 	return err
@@ -96,7 +107,7 @@ func (a *API) BatchDeleteUser(userIds []string) error {
 	qs := make(url.Values)
 	qs.Add("access_token", token)
 
-	url := BatchDeleteUserURI + "?" + qs.Encode()
+	url := batchDeleteUserURI + "?" + qs.Encode()
 
 	data, err := json.Marshal(map[string][]string{
 		"useridlist": userIds,
@@ -120,7 +131,7 @@ func (a *API) GetUser(userID string) (*User, error) {
 	qs.Add("access_token", token)
 	qs.Add("userid", userID)
 
-	url := GetUserURI + "?" + qs.Encode()
+	url := getUserURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {
@@ -152,7 +163,7 @@ func (a *API) ListSimpleUser(departmentID int64, fetchChild *int, status *int) (
 		qs.Add("status", strconv.Itoa(*status))
 	}
 
-	url := ListSimpleUserURI + "?" + qs.Encode()
+	url := listSimpleUserURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {
@@ -189,7 +200,7 @@ func (a *API) ListUser(departmentID int64, fetchChild *int, status *int) ([]*Use
 		qs.Add("status", strconv.Itoa(*status))
 	}
 
-	url := ListUserURI + "?" + qs.Encode()
+	url := listUserURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {
@@ -217,7 +228,7 @@ func (a *API) InviteUser(userID, inviteTips string) (inviteType int, err error) 
 	qs := make(url.Values)
 	qs.Add("access_token", token)
 
-	url := InviteUserURI + "?" + qs.Encode()
+	url := inviteUserURI + "?" + qs.Encode()
 	data, _ := json.Marshal(map[string]string{
 		"userid":      userID,
 		"invite_tips": inviteTips,

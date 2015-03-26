@@ -8,24 +8,8 @@ import (
 	"github.com/heroicyang/wechat-qy/base"
 )
 
-// 企业号相关接口的 API 接口地址
 const (
-	FetchTokenURI       = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
-	CreateMenuURI       = "https://qyapi.weixin.qq.com/cgi-bin/menu/create"
-	DeleteMenuURI       = "https://qyapi.weixin.qq.com/cgi-bin/menu/delete"
-	GetMenuURI          = "https://qyapi.weixin.qq.com/cgi-bin/menu/get"
-	CreateDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/create"
-	UpdateDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/update"
-	DeleteDepartmentURI = "https://qyapi.weixin.qq.com/cgi-bin/department/delete"
-	ListDepartmentURI   = "https://qyapi.weixin.qq.com/cgi-bin/department/list"
-	CreateUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/create"
-	UpdateUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/update"
-	DeleteUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/delete"
-	BatchDeleteUserURI  = "https://qyapi.weixin.qq.com/cgi-bin/user/batchdelete"
-	GetUserURI          = "https://qyapi.weixin.qq.com/cgi-bin/user/get"
-	ListSimpleUserURI   = "https://qyapi.weixin.qq.com/cgi-bin/user/simplelist"
-	ListUserURI         = "https://qyapi.weixin.qq.com/cgi-bin/user/list"
-	InviteUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/invite/send"
+	fetchTokenURI = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
 )
 
 // API 封装了企业号相关的接口操作
@@ -79,7 +63,7 @@ func (a *API) FetchToken() (token string, expiresIn int64, err error) {
 	qs.Add("corpid", a.CorpID)
 	qs.Add("corpsecret", a.corpSecret)
 
-	url := FetchTokenURI + "?" + qs.Encode()
+	url := fetchTokenURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {

@@ -6,6 +6,12 @@ import (
 	"strconv"
 )
 
+const (
+	createMenuURI = "https://qyapi.weixin.qq.com/cgi-bin/menu/create"
+	deleteMenuURI = "https://qyapi.weixin.qq.com/cgi-bin/menu/delete"
+	getMenuURI    = "https://qyapi.weixin.qq.com/cgi-bin/menu/get"
+)
+
 // 自定义菜单按钮类型
 const (
 	MenuButtonTypeClick           = "click"
@@ -43,7 +49,7 @@ func (a *API) CreateMenu(agentID int64, menu Menu) error {
 	qs.Add("access_token", token)
 	qs.Add("agentid", strconv.FormatInt(agentID, 10))
 
-	url := CreateMenuURI + "?" + qs.Encode()
+	url := createMenuURI + "?" + qs.Encode()
 	data, err := json.Marshal(menu)
 	if err != nil {
 		return err
@@ -65,7 +71,7 @@ func (a *API) DeleteMenu(agentID int64) error {
 	qs.Add("access_token", token)
 	qs.Add("agentid", strconv.FormatInt(agentID, 10))
 
-	url := DeleteMenuURI + "?" + qs.Encode()
+	url := deleteMenuURI + "?" + qs.Encode()
 
 	_, err = a.Client.GetJSON(url)
 
@@ -85,7 +91,7 @@ func (a *API) GetMenu(agentID int64) (Menu, error) {
 	qs.Add("access_token", token)
 	qs.Add("agentid", strconv.FormatInt(agentID, 10))
 
-	url := GetMenuURI + "?" + qs.Encode()
+	url := getMenuURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {
