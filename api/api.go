@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"net/url"
 
 	"github.com/heroicyang/wechat-crypter"
 	"github.com/heroicyang/wechat-qy/base"
@@ -9,6 +10,7 @@ import (
 
 // 企业号相关接口的 API 接口地址
 const (
+	FetchTokenURI       = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
 	CreateMenuURI       = "https://qyapi.weixin.qq.com/cgi-bin/menu/create"
 	DeleteMenuURI       = "https://qyapi.weixin.qq.com/cgi-bin/menu/delete"
 	GetMenuURI          = "https://qyapi.weixin.qq.com/cgi-bin/menu/get"
@@ -71,6 +73,26 @@ func (a *API) Retriable(body []byte) (bool, error) {
 	}
 }
 
+// FetchToken 方法使用企业管理组的密钥向 API 服务器获取企业号的令牌信息
 func (a *API) FetchToken() (token string, expiresIn int64, err error) {
-	return "", 0, nil
+	qs := make(url.Values)
+	qs.Add("corpid", a.CorpID)
+	qs.Add("corpsecret", a.corpSecret)
+
+	url := FetchTokenURI + "?" + qs.Encode()
+
+	body, err := a.Client.GetJSON(url)
+	if err != nil {
+		return
+	}
+
+	result := &TokenInfo{}
+	if err = json.Unmarshal(body, result); err != nil {
+		return
+	}
+
+	token = result.Token
+	expiresIn = result.ExpiresIn
+
+	return
 }
