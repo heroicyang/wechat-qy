@@ -21,6 +21,9 @@ const (
 	DeleteUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/user/delete"
 	BatchDeleteUserURI  = "https://qyapi.weixin.qq.com/cgi-bin/user/batchdelete"
 	GetUserURI          = "https://qyapi.weixin.qq.com/cgi-bin/user/get"
+	ListSimpleUserURI   = "https://qyapi.weixin.qq.com/cgi-bin/user/simplelist"
+	ListUserURI         = "https://qyapi.weixin.qq.com/cgi-bin/user/list"
+	InviteUserURI       = "https://qyapi.weixin.qq.com/cgi-bin/invite/send"
 )
 
 // API 封装了企业号相关的接口操作
