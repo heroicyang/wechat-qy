@@ -62,7 +62,7 @@ func (s *Suite) Retriable(body []byte) (bool, error) {
 	switch result.ErrCode {
 	case base.ErrCodeOk:
 		return false, nil
-	case base.ErrCodeTokenInvalid, base.ErrCodeTokenTimeout:
+	case base.ErrCodeSuiteTokenInvalid, base.ErrCodeSuiteTokenTimeout, base.ErrCodeSuiteTokenFailure:
 		if _, err := s.tokener.RefreshToken(); err != nil {
 			return false, err
 		}
