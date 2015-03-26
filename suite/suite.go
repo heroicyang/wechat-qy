@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/heroicyang/wechat-crypto"
+	"github.com/heroicyang/wechat-crypter"
 	"github.com/heroicyang/wechat-qy/base"
 )
 
@@ -29,21 +29,21 @@ type Suite struct {
 	ticket         string
 	token          string
 	encodingAESKey string
-	msgCrypt       crypto.WechatMsgCrypt
+	msgCrypter     crypter.MessageCrypter
 	tokener        base.Tokener
 	client         *base.Client
 }
 
 // New 方法用于创建 Suite 实例
 func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) *Suite {
-	msgCrypt, _ := crypto.NewWechatCrypt(suiteToken, suiteEncodingAESKey, suiteID)
+	msgCrypter, _ := crypter.NewMessageCrypter(suiteToken, suiteEncodingAESKey, suiteID)
 
 	suite := &Suite{
 		id:             suiteID,
 		secret:         suiteSecret,
 		token:          suiteToken,
 		encodingAESKey: suiteEncodingAESKey,
-		msgCrypt:       msgCrypt,
+		msgCrypter:     msgCrypter,
 	}
 
 	suite.client = base.NewClient(suite)
@@ -81,11 +81,11 @@ func (s *Suite) Parse(body []byte, signature, timestamp, nonce string) (interfac
 		return nil, err
 	}
 
-	if signature != s.msgCrypt.GetSignature(timestamp, nonce, reqBody.Encrypt) {
+	if signature != s.msgCrypter.GetSignature(timestamp, nonce, reqBody.Encrypt) {
 		return nil, fmt.Errorf("validate signature error")
 	}
 
-	origData, suiteID, err := s.msgCrypt.Decrypt(reqBody.Encrypt)
+	origData, suiteID, err := s.msgCrypter.Decrypt(reqBody.Encrypt)
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +121,14 @@ func (s *Suite) Parse(body []byte, signature, timestamp, nonce string) (interfac
 
 // Response 方法用于生成应用套件的被动响应消息
 func (s *Suite) Response(message []byte) ([]byte, error) {
-	msgEncrypt, err := s.msgCrypt.Encrypt(string(message))
+	msgEncrypt, err := s.msgCrypter.Encrypt(string(message))
 	if err != nil {
 		return nil, err
 	}
 
 	nonce := base.GenerateNonce()
 	timestamp := base.GenerateTimestamp()
-	signature := s.msgCrypt.GetSignature(fmt.Sprintf("%d", timestamp), nonce, msgEncrypt)
+	signature := s.msgCrypter.GetSignature(fmt.Sprintf("%d", timestamp), nonce, msgEncrypt)
 
 	resp := &base.RecvHTTPRespBody{
 		Encrypt:      base.StringToCDATA(msgEncrypt),
@@ -350,7 +350,7 @@ func (s *Suite) fetchCorpToken(corpID, permanentCode string) (*corpTokenInfo, er
 	}
 
 	result := &corpTokenInfo{}
-	err = json.Unmarshal(body, &result)
+	err = json.Unmarshal(body, result)
 
 	return result, err
 }

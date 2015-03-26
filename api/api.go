@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/heroicyang/wechat-crypto"
+	"github.com/heroicyang/wechat-crypter"
 	"github.com/heroicyang/wechat-qy/base"
 )
 
@@ -27,19 +27,19 @@ const (
 type API struct {
 	corpSecret string
 	CorpID     string
-	MsgCrypt   crypto.WechatMsgCrypt
+	MsgCrypter crypter.MessageCrypter
 	Client     *base.Client
 	Tokener    base.Tokener
 }
 
 // New 方法创建 API 实例
 func New(corpID, corpSecret, token, encodingAESKey string) *API {
-	msgCrypt, _ := crypto.NewWechatCrypt(token, encodingAESKey, corpID)
+	msgCrypter, _ := crypter.NewMessageCrypter(token, encodingAESKey, corpID)
 
 	api := &API{
 		corpSecret: corpSecret,
 		CorpID:     corpID,
-		MsgCrypt:   msgCrypt,
+		MsgCrypter: msgCrypter,
 	}
 
 	api.Client = base.NewClient(api)
