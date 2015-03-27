@@ -18,7 +18,7 @@ type API struct {
 	CorpID     string
 	MsgCrypter crypter.MessageCrypter
 	Client     *base.Client
-	Tokener    base.Tokener
+	Tokener    *base.Tokener
 }
 
 // New 方法创建 API 实例
@@ -32,28 +32,46 @@ func New(corpID, corpSecret, token, encodingAESKey string) *API {
 	}
 
 	api.Client = base.NewClient(api)
-	api.Tokener = NewTokener(api)
+	api.Tokener = base.NewTokener(api)
 
 	return api
 }
 
 // Retriable 方法实现了 API 在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
-func (a *API) Retriable(body []byte) (bool, error) {
+func (a *API) Retriable(reqURL string, body []byte) (bool, string, error) {
+	u, err := url.Parse(reqURL)
+	if err != nil {
+		return false, "", nil
+	}
+
+	q := u.Query()
+	if q.Get("access_token") == "" {
+		return false, "", nil
+	}
+
 	result := &base.Error{}
-	if err := json.Unmarshal(body, result); err != nil {
-		return false, err
+	if err = json.Unmarshal(body, result); err != nil {
+		return false, "", nil
 	}
 
 	switch result.ErrCode {
 	case base.ErrCodeOk:
-		return false, nil
+		return false, "", nil
 	case base.ErrCodeTokenInvalid, base.ErrCodeTokenTimeout:
-		if _, err := a.Tokener.RefreshToken(); err != nil {
-			return false, err
+		if err := a.Tokener.RefreshToken(); err != nil {
+			return false, "", err
 		}
-		return true, nil
+
+		token, err := a.Tokener.Token()
+		if err != nil {
+			return false, "", err
+		}
+
+		q.Set("access_token", token)
+		u.RawQuery = q.Encode()
+		return true, u.String(), nil
 	default:
-		return false, result
+		return false, "", result
 	}
 }
 
@@ -70,7 +88,11 @@ func (a *API) FetchToken() (token string, expiresIn int64, err error) {
 		return
 	}
 
-	result := &TokenInfo{}
+	result := &struct {
+		Token     string `json:"access_token"`
+		ExpiresIn int64  `json:"expires_in"`
+	}{}
+
 	if err = json.Unmarshal(body, result); err != nil {
 		return
 	}

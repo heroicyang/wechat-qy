@@ -30,7 +30,7 @@ type Suite struct {
 	token          string
 	encodingAESKey string
 	msgCrypter     crypter.MessageCrypter
-	tokener        base.Tokener
+	tokener        *base.Tokener
 	client         *base.Client
 }
 
@@ -47,28 +47,46 @@ func New(suiteID, suiteSecret, suiteToken, suiteEncodingAESKey string) *Suite {
 	}
 
 	suite.client = base.NewClient(suite)
-	suite.tokener = NewTokener(suite)
+	suite.tokener = base.NewTokener(suite)
 
 	return suite
 }
 
 // Retriable 方法实现了套件在发起请求遇到 token 错误时，先刷新 token 然后再次发起请求的逻辑
-func (s *Suite) Retriable(body []byte) (bool, error) {
+func (s *Suite) Retriable(reqURL string, body []byte) (bool, string, error) {
+	u, err := url.Parse(reqURL)
+	if err != nil {
+		return false, "", nil
+	}
+
+	q := u.Query()
+	if q.Get("suite_access_token") == "" {
+		return false, "", nil
+	}
+
 	result := &base.Error{}
 	if err := json.Unmarshal(body, result); err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	switch result.ErrCode {
 	case base.ErrCodeOk:
-		return false, nil
+		return false, "", nil
 	case base.ErrCodeSuiteTokenInvalid, base.ErrCodeSuiteTokenTimeout, base.ErrCodeSuiteTokenFailure:
 		if _, err := s.tokener.RefreshToken(); err != nil {
-			return false, err
+			return false, "", err
 		}
-		return true, nil
+
+		token, err := s.tokener.Token()
+		if err != nil {
+			return false, "", err
+		}
+
+		q.Set("suite_access_token", token)
+		u.RawQuery = q.Encode()
+		return true, u.String(), nil
 	default:
-		return false, result
+		return false, "", result
 	}
 }
 
@@ -158,9 +176,12 @@ func (s *Suite) FetchToken() (token string, expiresIn int64, err error) {
 		return
 	}
 
-	tokenInfo := &tokenInfo{}
-	err = json.Unmarshal(body, tokenInfo)
-	if err != nil {
+	tokenInfo := &struct {
+		Token     string `json:"suite_access_token"`
+		ExpiresIn int64  `json:"expires_in"`
+	}{}
+
+	if err = json.Unmarshal(body, tokenInfo); err != nil {
 		return
 	}
 

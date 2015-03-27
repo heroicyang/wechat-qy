@@ -23,7 +23,7 @@ func (s *Suite) NewAPI(corpID, permanentCode string) *API {
 	}
 
 	suiteAPI.Client = base.NewClient(suiteAPI)
-	suiteAPI.Tokener = api.NewTokener(suiteAPI)
+	suiteAPI.Tokener = base.NewTokener(suiteAPI)
 
 	return suiteAPI
 }
