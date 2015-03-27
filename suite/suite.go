@@ -73,7 +73,7 @@ func (s *Suite) Retriable(reqURL string, body []byte) (bool, string, error) {
 	case base.ErrCodeOk:
 		return false, "", nil
 	case base.ErrCodeSuiteTokenInvalid, base.ErrCodeSuiteTokenTimeout, base.ErrCodeSuiteTokenFailure:
-		if _, err := s.tokener.RefreshToken(); err != nil {
+		if err := s.tokener.RefreshToken(); err != nil {
 			return false, "", err
 		}
 

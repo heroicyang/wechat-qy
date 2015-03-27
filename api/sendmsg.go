@@ -14,13 +14,23 @@ type MessageType string
 
 // 各种消息类型值
 const (
-	TextMsg   MessageType = "text"
-	ImageMsg  MessageType = "image"
-	VoiceMsg  MessageType = "voice"
-	VideoMsg  MessageType = "video"
+	// 发送和接收的消息类型
+
+	TextMsg  MessageType = "text"
+	ImageMsg MessageType = "image"
+	VoiceMsg MessageType = "voice"
+	VideoMsg MessageType = "video"
+
+	// 发送的额外消息类型
+
 	FileMsg   MessageType = "file"
 	NewsMsg   MessageType = "news"
 	MpNewsMsg MessageType = "mpnews"
+
+	// 接收的额外消息类型
+
+	LocationMsg MessageType = "location"
+	EventMsg    MessageType = "event"
 )
 
 // TextContent 为文本类型消息的文本内容
@@ -39,8 +49,8 @@ type TextMessage struct {
 	Safe    int         `json:"safe"`
 }
 
-// MediaID 为图片类型消息的媒体文件内容
-type MediaID struct {
+// Media 为发送消息的媒体文件内容
+type Media struct {
 	ID string `json:"media_id"`
 }
 
@@ -51,7 +61,7 @@ type ImageMessage struct {
 	ToTag   string      `json:"totag,omitempty"`
 	MsgType MessageType `json:"msgtype"`
 	AgentID int64       `json:"agentid"`
-	Image   MediaID     `json:"image"`
+	Image   Media       `json:"image"`
 	Safe    int         `json:"safe"`
 }
 
@@ -62,7 +72,7 @@ type VoiceMessage struct {
 	ToTag   string      `json:"totag,omitempty"`
 	MsgType MessageType `json:"msgtype"`
 	AgentID int64       `json:"agentid"`
-	Voice   MediaID     `json:"voice"`
+	Voice   Media       `json:"voice"`
 	Safe    int         `json:"safe"`
 }
 
@@ -91,7 +101,7 @@ type FileMessage struct {
 	ToTag   string      `json:"totag,omitempty"`
 	MsgType MessageType `json:"msgtype"`
 	AgentID int64       `json:"agentid"`
-	File    MediaID     `json:"file"`
+	File    Media       `json:"file"`
 	Safe    int         `json:"safe"`
 }
 
