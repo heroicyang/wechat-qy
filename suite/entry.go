@@ -17,14 +17,14 @@ type Corporation struct {
 	Type          string `json:"corp_type"`
 	RoundLogoURI  string `json:"corp_round_logo_url"`
 	SquareLogoURI string `json:"corp_square_logo_url"`
-	UserMax       string `json:"corp_user_max"`
-	AgentMax      string `json:"corp_agent_max"`
+	UserMax       int    `json:"corp_user_max"`
+	AgentMax      int    `json:"corp_agent_max"`
 	QRCode        string `json:"corp_wxqrcode"`
 }
 
 // Agent 用于表示应用基本信息
 type Agent struct {
-	ID                   string `json:"agentid"`
+	ID                   int64  `json:"agentid"`
 	Name                 string `json:"name"`
 	RoundLogoURI         string `json:"round_logo_url"`
 	SquareLogoURI        string `json:"square_logo_url"`
@@ -37,12 +37,12 @@ type Agent struct {
 
 type authorizedAgent struct {
 	Agent
-	AppID    string   `json:"appid"`
+	AppID    int64    `json:"appid"`
 	APIGroup []string `json:"api_group"`
 }
 
 type authorizedDepartment struct {
-	ID       string `json:"id"`
+	ID       int64  `json:"id"`
 	Name     string `json:"name"`
 	ParentID string `json:"parentid"`
 	Writable string `json:"writable"`
