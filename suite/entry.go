@@ -24,7 +24,7 @@ type Corporation struct {
 
 // Agent 用于表示应用基本信息
 type Agent struct {
-	ID                   string `json:"agentid"`
+	ID                   int64  `json:"agentid"`
 	Name                 string `json:"name"`
 	RoundLogoURI         string `json:"round_logo_url"`
 	SquareLogoURI        string `json:"square_logo_url"`
@@ -37,12 +37,12 @@ type Agent struct {
 
 type authorizedAgent struct {
 	Agent
-	AppID    string   `json:"appid"`
+	AppID    int64    `json:"appid"`
 	APIGroup []string `json:"api_group"`
 }
 
 type authorizedDepartment struct {
-	ID       string `json:"id"`
+	ID       int64  `json:"id"`
 	Name     string `json:"name"`
 	ParentID string `json:"parentid"`
 	Writable string `json:"writable"`
