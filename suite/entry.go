@@ -44,7 +44,7 @@ type authorizedAgent struct {
 type authorizedDepartment struct {
 	ID       int64  `json:"id"`
 	Name     string `json:"name"`
-	ParentID string `json:"parentid"`
+	ParentID int64  `json:"parentid"`
 	Writable string `json:"writable"`
 }
 
