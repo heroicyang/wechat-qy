@@ -45,7 +45,7 @@ type authorizedDepartment struct {
 	ID       int64  `json:"id"`
 	Name     string `json:"name"`
 	ParentID int64  `json:"parentid"`
-	Writable string `json:"writable"`
+	Writable bool   `json:"writable"`
 }
 
 // AuthInfo 表示授权基本信息
