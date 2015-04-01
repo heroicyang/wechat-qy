@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"mime/multipart"
 	"net/http"
 )
@@ -16,8 +17,8 @@ type Retrier interface {
 
 // Client 封装了公共的请求方法
 type Client struct {
-	*http.Client
-	api interface{}
+	httpClient *http.Client
+	api        interface{}
 }
 
 // NewClient 方法用于创建 Client 实例
@@ -92,11 +93,11 @@ RETRY:
 }
 
 // PostMultipart 方法用于发起 multipart/form-data POST 请求
-func (c *Client) PostMultipart(url, fieldName, fileName string, dataReader io.Reader) ([]byte, error) {
+func (c *Client) PostMultipart(url, fieldname, filename string, dataReader io.Reader) ([]byte, error) {
 	bodyBuf := new(bytes.Buffer)
 	multipartWriter := multipart.NewWriter(bodyBuf)
 
-	disposition, err := multipartWriter.CreateFormFile(fieldName, fileName)
+	disposition, err := multipartWriter.CreateFormFile(fieldname, filename)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,11 @@ RETRY:
 		return nil, err
 	}
 
-	body, err := c.request(req, map[string]string{"Content-Type": multipartWriter.FormDataContentType()})
+	req.ContentLength = int64(len(bodyBytes))
+
+	body, err := c.request(req, map[string]string{
+		"Content-Type": multipartWriter.FormDataContentType(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +147,54 @@ RETRY:
 	return body, nil
 }
 
+// GetMedia 方法专用于从微信服务器获取媒体文件
+func (c *Client) GetMedia(url string) (*http.Response, error) {
+	reqURL := url
+	hasRetried := false
+	retriable := false
+RETRY:
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed, status[%d]", resp.StatusCode)
+	}
+
+	contentType, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
+	if contentType != "text/plain" && contentType != "application/json" {
+		return resp, nil
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	switch c.api.(type) {
+	case Retrier:
+		api := c.api.(Retrier)
+		retriable, reqURL, err = api.Retriable(url, body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !hasRetried && retriable {
+		hasRetried = true
+		goto RETRY
+	}
+
+	return nil, nil
+}
+
 func (c *Client) request(req *http.Request, headers map[string]string) ([]byte, error) {
 	header := make(http.Header)
 	for key, val := range headers {
@@ -149,7 +202,7 @@ func (c *Client) request(req *http.Request, headers map[string]string) ([]byte, 
 	}
 	req.Header = header
 
-	resp, err := c.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
