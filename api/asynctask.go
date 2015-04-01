@@ -3,13 +3,23 @@ package api
 import (
 	"encoding/json"
 	"net/url"
+	"wechat-qy/base"
 )
 
 const (
-	inviteTaskURI            = "https://qyapi.weixin.qq.com/cgi-bin/batch/inviteuser"
+	inviteUsersTaskURI       = "https://qyapi.weixin.qq.com/cgi-bin/batch/inviteuser"
 	updateUsersTaskURI       = "https://qyapi.weixin.qq.com/cgi-bin/batch/syncuser"
 	replaceUsersTaskURI      = "https://qyapi.weixin.qq.com/cgi-bin/batch/replaceuser"
 	replaceDepartmentTaskURI = "https://qyapi.weixin.qq.com/cgi-bin/batch/replaceparty"
+	getTaskResultURI         = "https://qyapi.weixin.qq.com/cgi-bin/batch/getresult"
+)
+
+// 异步任务操作类型
+const (
+	SyncUserTask          = "sync_user"
+	ReplaceUserTask       = "replace_user"
+	InviteUserTask        = "invite_user"
+	ReplaceDepartmentTask = "replace_party"
 )
 
 // AsyncTaskCallback 异步任务的回调信息
@@ -34,9 +44,81 @@ type UpdateContactTask struct {
 	Callback AsyncTaskCallback `json:"callback"`
 }
 
-// PerformInviteTask 方法执行邀请成员关注的任务
-func (a *API) PerformInviteTask(task InviteTask) (string, error) {
-	return a.performTask(inviteTaskURI, task)
+// InviteUserTaskResult 邀请成员关注任务的执行结构信息
+type InviteUserTaskResult struct {
+	base.Error
+	UserID     string `json:"userid"`
+	InviteType int    `json:"invitetype"`
+}
+
+// UpdateUserTaskResult 增量、全量更新成员任务的执行结果信息
+type UpdateUserTaskResult struct {
+	base.Error
+	Action int    `json:"action"`
+	UserID string `json:"userid"`
+}
+
+// UpdateDepartmentTaskResult 全量更新部门任务的执行结果信息
+type UpdateDepartmentTaskResult struct {
+	base.Error
+	Action       int   `json:"action"`
+	DepartmentID int64 `json:"partyid"`
+}
+
+// AsyncTaskResultInfo 为异步任务完成结果信息
+type AsyncTaskResultInfo struct {
+	Status     int         `json:"status"`
+	Type       string      `json:"type"`
+	Total      int         `json:"total"`
+	Percentage float64     `json:"percentage"`
+	RemainTime float64     `json:"remaintime"`
+	Result     interface{} `json:"result"`
+}
+
+// GetTaskResult 方法用于获取异步任务的完成结果
+func (a *API) GetTaskResult(taskID string) (AsyncTaskResultInfo, error) {
+	result := AsyncTaskResultInfo{}
+
+	token, err := a.Tokener.Token()
+	if err != nil {
+		return result, err
+	}
+
+	qs := make(url.Values)
+	qs.Add("access_token", token)
+	qs.Add("jobid", taskID)
+
+	uri := getTaskResultURI + "?" + qs.Encode()
+
+	body, err := a.Client.GetJSON(uri)
+	if err != nil {
+		return result, err
+	}
+
+	probeResult := &struct {
+		Type string `json:"type"`
+	}{}
+	if err = json.Unmarshal(body, probeResult); err != nil {
+		return result, err
+	}
+
+	switch probeResult.Type {
+	case InviteUserTask:
+		result.Result = []InviteUserTaskResult{}
+	case SyncUserTask, ReplaceUserTask:
+		result.Result = []UpdateUserTaskResult{}
+	case ReplaceDepartmentTask:
+		result.Result = []UpdateDepartmentTaskResult{}
+	}
+
+	err = json.Unmarshal(body, &result)
+
+	return result, err
+}
+
+// PerformInviteUsersTask 方法执行邀请成员关注的任务
+func (a *API) PerformInviteUsersTask(task InviteTask) (string, error) {
+	return a.performTask(inviteUsersTaskURI, task)
 }
 
 // PerformUpdateUsersTask 方法执行增量更新成员的任务
