@@ -76,6 +76,7 @@ func (a *API) DownloadMedia(mediaID string, writer io.Writer) error {
 		return fmt.Errorf("从微信服务器获取媒体文件失败")
 	}
 
+	defer resp.Body.Close()
 	_, err = io.Copy(writer, resp.Body)
 	return err
 }
