@@ -1,5 +1,5 @@
 # wechat-qy
-易于使用的微信企业号通用 SDK (Golang)
+> 易于使用的微信企业号通用 SDK (Golang)
 
 ## 特性
 
@@ -12,9 +12,10 @@
 
 ## 安装
 ```bash
-$ go get -u github.com/heroicyang/wechat-crypter # 通用的微信开放平台加解密库
 $ go get -u github.com/heroicyang/wechat-qy
 ```
+
+*安利一下通用的微信开放平台加解密库：[github.com/heroicyang/wechat-crypter](https://github.com/heroicyang/wechat-crypter)*
 
 ## 使用
 
