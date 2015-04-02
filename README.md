@@ -12,6 +12,7 @@
 
 ## 安装
 ```bash
+$ go get -u github.com/heroicyang/wechat-crypter # 通用的微信开放平台加解密库
 $ go get -u github.com/heroicyang/wechat-qy
 ```
 
