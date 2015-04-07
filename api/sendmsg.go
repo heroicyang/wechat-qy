@@ -113,6 +113,11 @@ type Article struct {
 	PicURL      string `json:"picurl,omitempty"`
 }
 
+// Articles 为普通图文消息的文章列表
+type Articles struct {
+	Articles []Article `json:"articles"`
+}
+
 // NewsMessage 为发送的普通图文类型消息
 type NewsMessage struct {
 	ToUser  string      `json:"touser,omitempty"`
@@ -120,9 +125,7 @@ type NewsMessage struct {
 	ToTag   string      `json:"totag,omitempty"`
 	MsgType MessageType `json:"msgtype"`
 	AgentID int64       `json:"agentid"`
-	News    struct {
-		Articles []Article `json:"articles"`
-	} `json:"news"`
+	News    Articles    `json:"news"`
 }
 
 // MpArticle 为特殊图文消息的文章内容
@@ -136,6 +139,11 @@ type MpArticle struct {
 	ShowCoverPic     *int   `json:"show_cover_pic,omitempty"`
 }
 
+// MpArticles 为特殊图文消息的文章列表
+type MpArticles struct {
+	Articles []MpArticle `json:"articles"`
+}
+
 // MpNewsMessage 为发送的特殊图文类型消息
 type MpNewsMessage struct {
 	ToUser  string      `json:"touser,omitempty"`
@@ -143,10 +151,8 @@ type MpNewsMessage struct {
 	ToTag   string      `json:"totag,omitempty"`
 	MsgType MessageType `json:"msgtype"`
 	AgentID int64       `json:"agentid"`
-	MpNews  struct {
-		Articles []MpArticle `json:"articles"`
-	} `json:"mpnews"`
-	Safe int `json:"safe"`
+	MpNews  MpArticles  `json:"mpnews"`
+	Safe    int         `json:"safe"`
 }
 
 // SendMessage 方法用于主动发送消息给企业成员
