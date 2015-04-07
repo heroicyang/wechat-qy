@@ -41,7 +41,7 @@ func (a *API) GetOAuth2User(agentID int64, code string) (OAuth2UserInfo, error) 
 	qs.Add("code", code)
 	qs.Add("agentid", strconv.FormatInt(agentID, 10))
 
-	url := createUserURI + "?" + qs.Encode()
+	url := oauth2GetUserURI + "?" + qs.Encode()
 
 	body, err := a.Client.GetJSON(url)
 	if err != nil {
