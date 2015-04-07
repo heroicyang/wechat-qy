@@ -25,14 +25,14 @@ type Corporation struct {
 // Agent 用于表示应用基本信息
 type Agent struct {
 	ID                   int64  `json:"agentid"`
-	Name                 string `json:"name"`
-	RoundLogoURI         string `json:"round_logo_url"`
-	SquareLogoURI        string `json:"square_logo_url"`
-	Description          string `json:"description"`
-	RedirectDomain       string `json:"redirect_domain"`
-	RedirectLocationFlag int64  `json:"report_location_flag"`
-	IsReportUser         int64  `json:"isreportuser"`
-	IsReportEnter        int64  `json:"isreportenter"`
+	Name                 string `json:"name,omitempty"`
+	RoundLogoURI         string `json:"round_logo_url,omitempty"`
+	SquareLogoURI        string `json:"square_logo_url,omitempty"`
+	Description          string `json:"description,omitempty"`
+	RedirectDomain       string `json:"redirect_domain,omitempty"`
+	RedirectLocationFlag int64  `json:"report_location_flag,omitempty"`
+	IsReportUser         int64  `json:"isreportuser,omitempty"`
+	IsReportEnter        int64  `json:"isreportenter,omitempty"`
 }
 
 type authorizedAgent struct {
@@ -104,7 +104,7 @@ type CorpAgent struct {
 // AgentEditInfo 代表设置授权方企业号某个应用时的应用信息
 type AgentEditInfo struct {
 	Agent
-	LogoMediaID string `json:"logo_mediaid"`
+	LogoMediaID string `json:"logo_mediaid,omitempty"`
 }
 
 // RecvSuiteTicket 用于记录应用套件 ticket 的被动响应结果
