@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"net/url"
 )
 
@@ -54,11 +55,11 @@ func (a *API) UploadMedia(mediaType mediaType, filename string, reader io.Reader
 	return media, err
 }
 
-// DownloadMedia 方法用于从微信服务器获取媒体文件
-func (a *API) DownloadMedia(mediaID string, writer io.Writer) error {
+// DownloadMedia 方法用于从微信服务器获取媒体文件，文件流将写入 writer 中，并返回 filename 或者 error 信息
+func (a *API) DownloadMedia(mediaID string, writer io.Writer) (string, error) {
 	token, err := a.Tokener.Token()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	qs := make(url.Values)
@@ -69,14 +70,20 @@ func (a *API) DownloadMedia(mediaID string, writer io.Writer) error {
 
 	resp, err := a.Client.GetMedia(url)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if resp == nil {
-		return fmt.Errorf("从微信服务器获取媒体文件失败")
+		return "", fmt.Errorf("从微信服务器获取媒体文件失败")
+	}
+
+	contentDisposition := resp.Header.Get("Content-Disposition")
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	if err != nil {
+		return "", err
 	}
 
 	defer resp.Body.Close()
 	_, err = io.Copy(writer, resp.Body)
-	return err
+	return params["filename"], err
 }
