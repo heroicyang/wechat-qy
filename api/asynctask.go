@@ -3,7 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/url"
-	"wechat-qy/base"
+
+	"github.com/heroicyang/wechat-qy/base"
 )
 
 const (
