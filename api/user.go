@@ -23,21 +23,24 @@ type UserAttribute struct {
 	Value string `json:"value"`
 }
 
+// UserAttributes struct 为用户扩展信息列表
+type UserAttributes struct {
+	Attrs []*UserAttribute `json:"attrs,omitempty"`
+}
+
 // User struct 为企业用户信息
 type User struct {
-	UserID        string  `json:"userid"`
-	Name          string  `json:"name,omitempty"`
-	DepartmentIds []int64 `json:"department,omitempty"`
-	Position      string  `json:"position,omitempty"`
-	Mobile        string  `json:"mobile,omitempty"`
-	Email         string  `json:"email,omitempty"`
-	WeixinID      string  `json:"weixinid,omitempty"`
-	Enable        *int    `json:"enable,omitempty"`
-	Avatar        string  `json:"avatar,omitempty"`
-	Status        *int    `json:"status,omitempty"`
-	ExtAttr       struct {
-		Attrs []*UserAttribute `json:"attrs,omitempty"`
-	} `json:"extattr,omitempty"`
+	UserID        string         `json:"userid"`
+	Name          string         `json:"name,omitempty"`
+	DepartmentIds []int64        `json:"department,omitempty"`
+	Position      string         `json:"position,omitempty"`
+	Mobile        string         `json:"mobile,omitempty"`
+	Email         string         `json:"email,omitempty"`
+	WeixinID      string         `json:"weixinid,omitempty"`
+	Enable        *int           `json:"enable,omitempty"`
+	Avatar        string         `json:"avatar,omitempty"`
+	Status        *int           `json:"status,omitempty"`
+	ExtAttr       UserAttributes `json:"extattr,omitempty"`
 }
 
 // CreateUser 方法用于创建用户

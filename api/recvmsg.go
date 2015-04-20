@@ -110,11 +110,14 @@ type RecvScanCodeEvent struct {
 	ScanCodeInfo ScanCodeInfo
 }
 
+// SendPicMD5Sum 描述发图事件中单个图片的 MD5 信息
+type SendPicMD5Sum struct {
+	PicMd5Sum string
+}
+
 // SendPicItem 描述发图事件中单个图片信息结构
 type SendPicItem struct {
-	Item struct {
-		PicMd5Sum string
-	} `xml:"item"`
+	Item SendPicMD5Sum `xml:"item"`
 }
 
 // SendPicsInfo 描述发图事件的图片信息结构
