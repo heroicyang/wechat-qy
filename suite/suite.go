@@ -12,14 +12,14 @@ import (
 
 // 应用套件相关操作的 API 地址
 const (
-	SuiteTokenURI    = "https://qyapi.weixin.qq.com/cgi-bin/service/get_suite_token"
-	PreAuthCodeURI   = "https://qyapi.weixin.qq.com/cgi-bin/service/get_pre_auth_code"
-	AuthURI          = "https://qy.weixin.qq.com/cgi-bin/loginpage"
-	PermanentCodeURI = "https://qyapi.weixin.qq.com/cgi-bin/service/get_permanent_code"
-	AuthInfoURI      = "https://qyapi.weixin.qq.com/cgi-bin/service/get_auth_info"
-	GetAgentURI      = "https://qyapi.weixin.qq.com/cgi-bin/service/get_agent"
-	SetAgentURI      = "https://qyapi.weixin.qq.com/cgi-bin/service/set_agent"
-	CorpTokenURI     = "https://qyapi.weixin.qq.com/cgi-bin/service/get_corp_token"
+	suiteTokenURI    = "https://qyapi.weixin.qq.com/cgi-bin/service/get_suite_token"
+	preAuthCodeURI   = "https://qyapi.weixin.qq.com/cgi-bin/service/get_pre_auth_code"
+	authURI          = "https://qy.weixin.qq.com/cgi-bin/loginpage"
+	permanentCodeURI = "https://qyapi.weixin.qq.com/cgi-bin/service/get_permanent_code"
+	authInfoURI      = "https://qyapi.weixin.qq.com/cgi-bin/service/get_auth_info"
+	getAgentURI      = "https://qyapi.weixin.qq.com/cgi-bin/service/get_agent"
+	setAgentURI      = "https://qyapi.weixin.qq.com/cgi-bin/service/set_agent"
+	corpTokenURI     = "https://qyapi.weixin.qq.com/cgi-bin/service/get_corp_token"
 )
 
 // Suite 结构体包含了应用套件的相关操作
@@ -171,7 +171,7 @@ func (s *Suite) FetchToken() (token string, expiresIn int64, err error) {
 		"suite_ticket": s.ticket,
 	})
 
-	body, err := s.client.PostJSON(SuiteTokenURI, buf)
+	body, err := s.client.PostJSON(suiteTokenURI, buf)
 	if err != nil {
 		return
 	}
@@ -199,7 +199,7 @@ func (s *Suite) getPreAuthCode(appIDs []int) (*preAuthCodeInfo, error) {
 
 	qs := url.Values{}
 	qs.Add("suite_access_token", token)
-	uri := PreAuthCodeURI + "?" + qs.Encode()
+	uri := preAuthCodeURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]interface{}{
 		"suite_id": s.id,
@@ -230,7 +230,7 @@ func (s *Suite) GetAuthURI(appIDs []int, redirectURI, state string) (string, err
 	qs.Add("redirect_uri", redirectURI)
 	qs.Add("state", state)
 
-	return AuthURI + "?" + qs.Encode(), nil
+	return authURI + "?" + qs.Encode(), nil
 }
 
 // GetPermanentCode 方法用于获取企业的永久授权码
@@ -242,7 +242,7 @@ func (s *Suite) GetPermanentCode(authCode string) (PermanentCodeInfo, error) {
 
 	qs := url.Values{}
 	qs.Add("suite_access_token", token)
-	uri := PermanentCodeURI + "?" + qs.Encode()
+	uri := permanentCodeURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]interface{}{
 		"suite_id":  s.id,
@@ -269,7 +269,7 @@ func (s *Suite) GetCorpAuthInfo(corpID, permanentCode string) (CorpAuthInfo, err
 
 	qs := url.Values{}
 	qs.Add("suite_access_token", token)
-	uri := AuthInfoURI + "?" + qs.Encode()
+	uri := authInfoURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":       s.id,
@@ -297,7 +297,7 @@ func (s *Suite) GetCropAgent(corpID, permanentCode, agentID string) (CorpAgent, 
 
 	qs := url.Values{}
 	qs.Add("suite_access_token", token)
-	uri := GetAgentURI + "?" + qs.Encode()
+	uri := getAgentURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":       s.id,
@@ -326,7 +326,7 @@ func (s *Suite) UpdateCorpAgent(corpID, permanentCode string, agent AgentEditInf
 
 	qs := url.Values{}
 	qs.Add("suite_access_token", token)
-	uri := SetAgentURI + "?" + qs.Encode()
+	uri := setAgentURI + "?" + qs.Encode()
 
 	data := struct {
 		SuiteID       string        `json:"suite_id"`
@@ -357,7 +357,7 @@ func (s *Suite) fetchCorpToken(corpID, permanentCode string) (*corpTokenInfo, er
 
 	qs := url.Values{}
 	qs.Add("suite_access_token", token)
-	uri := CorpTokenURI + "?" + qs.Encode()
+	uri := corpTokenURI + "?" + qs.Encode()
 
 	buf, _ := json.Marshal(map[string]string{
 		"suite_id":       s.id,
