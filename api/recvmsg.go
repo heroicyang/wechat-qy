@@ -170,7 +170,7 @@ type JobResultInfo struct {
 type RecvBatchJobResultEvent struct {
 	RecvBaseData
 	Event    string
-	BatchJob []JobResultInfo
+	BatchJob JobResultInfo
 }
 
 // RespBaseData 描述被动响应消息的公共结构
